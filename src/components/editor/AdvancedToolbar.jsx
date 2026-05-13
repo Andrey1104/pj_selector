@@ -12,7 +12,6 @@ import {
 import { IconButton, ButtonGroup, Separator, TabButton } from './EditorUI';
 import { useTranslation } from '@/lib/i18n';
 
-// System fonts available for text editing
 export const SYSTEM_FONTS = [
   { name: 'Arial', family: 'Arial, sans-serif' },
   { name: 'Helvetica', family: 'Helvetica, sans-serif' },
@@ -68,7 +67,6 @@ export function AdvancedToolbar({
   selectedObject,
   onUpdateSelected,
 
-  // Wireframe, split vectors, outline verification, and size lock
   wireframeMode,
   setWireframeMode,
   onSplitVector,
@@ -80,7 +78,6 @@ export function AdvancedToolbar({
   onLockAllSizes,
   onUnlockAllSizes,
 
-  // New props for rotation/scale numeric input
   rotationAngle,
   setRotationAngle,
   scalePercent,
@@ -88,12 +85,11 @@ export function AdvancedToolbar({
   onApplyRotation,
   onApplyScale,
 
-  // New props for coloring modes
+
   colorMode,
   setColorMode,
   onApplyColorToSymbol,
 
-  // New props for dimension lines
   dimensionLines,
   onAddDimensionLine,
   onUpdateDimensionLine,
@@ -101,13 +97,11 @@ export function AdvancedToolbar({
   dimensionColor,
   setDimensionColor,
 
-  // Multi-select props
   selectionMode,
   setSelectionMode,
   onSelectAll,
   onDeselectAll,
 
-  // Snap props
   snapEnabled,
   setSnapEnabled,
   snapToCenter,
@@ -122,13 +116,11 @@ export function AdvancedToolbar({
   onSnapToInnerCircle,
   onSnapToOuterCircle,
 
-  // Corner rounding props
   cornerRadius,
   setCornerRadius,
   onApplyCornerRadius,
   canApplyCornerRadius,
 
-  // Merge/Split vectors props
   onMergeVectors,
   canMergeVectors,
   onSplitByCircle,
@@ -349,7 +341,6 @@ export function AdvancedToolbar({
 
             <Separator vertical />
 
-            {/* Rotation by numeric input */}
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('angle')}</span>
               <div className="flex items-center gap-1">
@@ -377,7 +368,6 @@ export function AdvancedToolbar({
 
             <Separator vertical />
 
-            {/* Scale by numeric input */}
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('scale')}</span>
               <div className="flex items-center gap-1">
@@ -464,7 +454,6 @@ export function AdvancedToolbar({
 
             <Separator vertical />
 
-            {/* Selection mode toggle */}
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('multiSelect')}</span>
               <ButtonGroup>
@@ -674,7 +663,6 @@ export function AdvancedToolbar({
 
             <Separator vertical />
 
-            {/* Font family selector */}
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('fontFamily')}</span>
               <select
@@ -750,7 +738,6 @@ export function AdvancedToolbar({
           </div>
         )}
 
-        {/* New Coloring tab */}
         {activeTab === 'coloring' && (
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">
@@ -829,7 +816,6 @@ export function AdvancedToolbar({
           </div>
         )}
 
-        {/* New Dimensions tab */}
         {activeTab === 'dimensions' && (
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">
@@ -1048,7 +1034,6 @@ export function AdvancedToolbar({
           </div>
         )}
 
-        {/* Snap tab - new */}
         {activeTab === 'snap' && (
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">

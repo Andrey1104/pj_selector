@@ -5,7 +5,6 @@ export const CANVAS_H = 640;
 export const HISTORY_LIMIT = 50;
 export const PX_PER_MM = CANVAS_W / CANVAS_MM;
 
-// Predefined canvas sizes (in mm)
 export const CANVAS_SIZE_PRESETS = [
   { id: 'small', labelKey: 'canvasSizeSmall', mm: 100, description: '100mm' },
   { id: 'medium', labelKey: 'canvasSizeMedium', mm: 150, description: '150mm' },

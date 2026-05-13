@@ -1,9 +1,7 @@
-// Multi-language translations for the Editor
-// Supported languages: Czech (cs), English (en)
+
 
 export const translations = {
   cs: {
-    // Header
     designName: 'Název designu',
     description: 'Popis (volitelný)',
     undo: 'Zpět',
@@ -15,7 +13,6 @@ export const translations = {
     svgByColor: 'SVG podle barvy',
     exportEzcad: 'Export pro Ezcad',
 
-    // Tools
     select: 'Výběr',
     brush: 'Štětec',
     rectangle: 'Obdélník',
@@ -31,7 +28,6 @@ export const translations = {
     traceBitmap: 'Trasovat bitmapu',
     dimensionLine: 'Kótovací čára',
 
-    // Toolbar tabs
     transform: 'Transformace',
     arrange: 'Uspořádat',
     edit: 'Upravit',
@@ -42,7 +38,6 @@ export const translations = {
     coloring: 'Barvení',
     dimensions: 'Kóty',
 
-    // Transform
     align: 'Zarovnat',
     alignLeft: 'Zarovnat vlevo',
     alignCenter: 'Zarovnat na střed (H)',
@@ -64,7 +59,6 @@ export const translations = {
     scale: 'Měřítko',
     scalePercent: 'Měřítko %',
 
-    // Arrange
     order: 'Pořadí',
     bringForward: 'Posunout dopředu',
     sendBackward: 'Posunout dozadu',
@@ -72,13 +66,11 @@ export const translations = {
     toggleVisibility: 'Přepnout viditelnost',
     toggleLock: 'Přepnout zámek',
 
-    // Edit
     clipboard: 'Schránka',
     copy: 'Kopírovat',
     paste: 'Vložit',
     delete: 'Smazat',
 
-    // View
     grid: 'Mřížka',
     toggleGrid: 'Přepnout mřížku',
     snapToGrid: 'Přichytit k mřížce',
@@ -90,7 +82,6 @@ export const translations = {
     wireframe: 'Drátový model',
     toggleWireframe: 'Přepnout drátový model',
 
-    // Text
     format: 'Formát',
     bold: 'Tučné',
     italic: 'Kurzíva',
@@ -99,7 +90,6 @@ export const translations = {
     fontFamily: 'Rodina písma',
     selectTextObject: 'Vyberte textový objekt k úpravě',
 
-    // Vectors
     split: 'Rozdělit',
     splitVector: 'Rozdělit vektor na subpaths',
     splitByCircle: 'Rozdělit podle kruhu',
@@ -113,7 +103,6 @@ export const translations = {
     allSizesLocked: 'Všechny velikosti jsou zamčeny',
     selectVectorToSplit: 'Vyberte vektorovou cestu k rozdělení',
 
-    // Snap
     snap: 'Přichytit',
     snapEnabled: 'Přichycení zapnuto',
     toggleSnap: 'Přepnout přichycení',
@@ -127,7 +116,6 @@ export const translations = {
     inner: 'Vnitřní',
     outer: 'Vnější',
 
-    // Outlines
     verify: 'Ověřit',
     verifyOutlines: 'Ověřit obrysy',
     center: 'Střed',
@@ -137,7 +125,6 @@ export const translations = {
     open: 'Otevřeno',
     selectOutlineToVerify: 'Vyberte obrys k ověření',
 
-    // Coloring
     colorMode: 'Režim barvení',
     fillAndStroke: 'Výplň a obrys',
     strokeOnly: 'Pouze obrys',
@@ -147,7 +134,6 @@ export const translations = {
     colorEntireSymbol: 'Obarvit celý symbol',
     colorBorderOnly: 'Obarvit pouze okraj',
 
-    // Dimensions (Kóty)
     dimensionLines: 'Kótovací čáry',
     addDimension: 'Přidat kótu',
     dimensionAngle: 'Úhel kóty',
@@ -155,7 +141,6 @@ export const translations = {
     dragToRotate: 'Táhněte pro otočení',
     enterAngle: 'Zadejte úhel',
 
-    // Panels
     toolDefaults: 'Výchozí nastavení',
     fill: 'Výplň',
     stroke: 'Obrys',
@@ -168,10 +153,8 @@ export const translations = {
     all: 'Vše',
     none: 'Žádné',
 
-    // Glass size
     glassSize: 'Velikost skla',
-    
-    // Canvas size
+
     canvasSize: 'Velikost plátna',
     canvasSizeSmall: 'Malé (100mm)',
     canvasSizeMedium: 'Střední (150mm)',
@@ -181,20 +164,17 @@ export const translations = {
     customCanvasSize: 'Vlastní velikost (mm)',
     applyCanvasSize: 'Použít',
 
-    // Scale control
     scaleControl: 'Ovládání měřítka',
     targetSize: 'Cílová velikost',
     applyScale: 'Aplikovat měřítko',
     currentScale: 'Aktuální měřítko',
 
-    // Selection
     multiSelect: 'Vícenásobný výběr',
     marqueeSelect: 'Výběr obdélníkem',
     shiftClickSelect: 'Shift+klik pro přidání do výběru',
     selectAll: 'Vybrat vše',
     deselectAll: 'Zrušit výběr',
 
-    // Messages
     clearCanvasConfirm: 'Vymazat celé plátno?',
     deleteLayersConfirm: 'Smazat {count} vybraných vrstev?',
     designUpdated: 'Design aktualizován',
@@ -227,7 +207,6 @@ export const translations = {
     loadDesignFailed: 'Nepodařilo se načíst design',
     ezcadExported: 'Exportováno pro Ezcad (vystředěno)',
 
-    // Language
     language: 'Jazyk',
     czech: 'Čeština',
     english: 'English',
@@ -235,7 +214,6 @@ export const translations = {
   },
 
   en: {
-    // Header
     designName: 'Design name',
     description: 'Description (optional)',
     undo: 'Undo',
@@ -247,7 +225,6 @@ export const translations = {
     svgByColor: 'SVG by color',
     exportEzcad: 'Export for Ezcad',
 
-    // Tools
     select: 'Select',
     brush: 'Brush',
     rectangle: 'Rectangle',
@@ -263,7 +240,6 @@ export const translations = {
     traceBitmap: 'Trace bitmap',
     dimensionLine: 'Dimension line',
 
-    // Toolbar tabs
     transform: 'Transform',
     arrange: 'Arrange',
     edit: 'Edit',
@@ -274,7 +250,6 @@ export const translations = {
     coloring: 'Coloring',
     dimensions: 'Dimensions',
 
-    // Transform
     align: 'Align',
     alignLeft: 'Align Left',
     alignCenter: 'Align Center (H)',
@@ -296,7 +271,6 @@ export const translations = {
     scale: 'Scale',
     scalePercent: 'Scale %',
 
-    // Arrange
     order: 'Order',
     bringForward: 'Bring Forward',
     sendBackward: 'Send Backward',
@@ -304,13 +278,11 @@ export const translations = {
     toggleVisibility: 'Toggle Visibility',
     toggleLock: 'Toggle Lock',
 
-    // Edit
     clipboard: 'Clipboard',
     copy: 'Copy',
     paste: 'Paste',
     delete: 'Delete',
 
-    // View
     grid: 'Grid',
     toggleGrid: 'Toggle Grid',
     snapToGrid: 'Snap to Grid',
@@ -322,7 +294,6 @@ export const translations = {
     wireframe: 'Wireframe',
     toggleWireframe: 'Toggle Wireframe Mode',
 
-    // Text
     format: 'Format',
     bold: 'Bold',
     italic: 'Italic',
@@ -331,7 +302,6 @@ export const translations = {
     fontFamily: 'Font Family',
     selectTextObject: 'Select a text object to edit',
 
-    // Vectors
     split: 'Split',
     splitVector: 'Split Vector into Subpaths',
     splitByCircle: 'Split by Circle',
@@ -345,7 +315,6 @@ export const translations = {
     allSizesLocked: 'All sizes are locked',
     selectVectorToSplit: 'Select a vector path to split',
 
-    // Snap
     snap: 'Snap',
     snapEnabled: 'Snap Enabled',
     toggleSnap: 'Toggle Snap',
@@ -359,7 +328,6 @@ export const translations = {
     inner: 'Inner',
     outer: 'Outer',
 
-    // Outlines
     verify: 'Verify',
     verifyOutlines: 'Verify Outlines',
     center: 'Center',
@@ -369,7 +337,6 @@ export const translations = {
     open: 'Open',
     selectOutlineToVerify: 'Select an outline to verify',
 
-    // Coloring
     colorMode: 'Color Mode',
     fillAndStroke: 'Fill & Stroke',
     strokeOnly: 'Stroke Only',
@@ -379,7 +346,6 @@ export const translations = {
     colorEntireSymbol: 'Color entire symbol',
     colorBorderOnly: 'Color border only',
 
-    // Dimensions (Kóty)
     dimensionLines: 'Dimension Lines',
     addDimension: 'Add Dimension',
     dimensionAngle: 'Dimension Angle',
@@ -387,7 +353,6 @@ export const translations = {
     dragToRotate: 'Drag to rotate',
     enterAngle: 'Enter angle',
 
-    // Panels
     toolDefaults: 'Tool defaults',
     fill: 'Fill',
     stroke: 'Stroke',
@@ -400,10 +365,8 @@ export const translations = {
     all: 'All',
     none: 'None',
 
-    // Glass size
     glassSize: 'Glass Size',
-    
-    // Canvas size
+
     canvasSize: 'Canvas Size',
     canvasSizeSmall: 'Small (100mm)',
     canvasSizeMedium: 'Medium (150mm)',
@@ -413,20 +376,17 @@ export const translations = {
     customCanvasSize: 'Custom size (mm)',
     applyCanvasSize: 'Apply',
 
-    // Scale control
     scaleControl: 'Scale Control',
     targetSize: 'Target Size',
     applyScale: 'Apply Scale',
     currentScale: 'Current Scale',
 
-    // Selection
     multiSelect: 'Multi-select',
     marqueeSelect: 'Marquee select',
     shiftClickSelect: 'Shift+click to add to selection',
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
 
-    // Messages
     clearCanvasConfirm: 'Clear the entire canvas?',
     deleteLayersConfirm: 'Delete {count} selected layer(s)?',
     designUpdated: 'Design updated',
@@ -459,7 +419,6 @@ export const translations = {
     loadDesignFailed: 'Failed to load design',
     ezcadExported: 'Exported for Ezcad (centered)',
 
-    // Language
     language: 'Language',
     czech: 'Čeština',
     english: 'English',
@@ -467,7 +426,6 @@ export const translations = {
   },
 
   uk: {
-    // Header
     designName: 'Назва дизайну',
     description: 'Опис (необов\'язково)',
     undo: 'Скасувати',
@@ -479,7 +437,6 @@ export const translations = {
     svgByColor: 'SVG за кольором',
     exportEzcad: 'Експорт для Ezcad',
 
-    // Tools
     select: 'Вибір',
     brush: 'Пензель',
     rectangle: 'Прямокутник',
@@ -495,7 +452,6 @@ export const translations = {
     traceBitmap: 'Трасувати растр',
     dimensionLine: 'Розмірна лінія',
 
-    // Toolbar tabs
     transform: 'Трансформація',
     arrange: 'Упорядкування',
     edit: 'Редагування',
@@ -506,7 +462,6 @@ export const translations = {
     coloring: 'Забарвлення',
     dimensions: 'Розміри',
 
-    // Transform
     align: 'Вирівняти',
     alignLeft: 'Вирівняти ліворуч',
     alignCenter: 'Вирівняти по центру (Г)',
@@ -528,7 +483,6 @@ export const translations = {
     scale: 'Масштаб',
     scalePercent: 'Масштаб %',
 
-    // Arrange
     order: 'Порядок',
     bringForward: 'Перемістити вперед',
     sendBackward: 'Перемістити назад',
@@ -536,13 +490,11 @@ export const translations = {
     toggleVisibility: 'Перемкнути видимість',
     toggleLock: 'Перемкнути блокування',
 
-    // Edit
     clipboard: 'Буфер обміну',
     copy: 'Копіювати',
     paste: 'Вставити',
     delete: 'Видалити',
 
-    // View
     grid: 'Сітка',
     toggleGrid: 'Перемкнути сітку',
     snapToGrid: 'Прив\'язка до сітки',
@@ -554,7 +506,6 @@ export const translations = {
     wireframe: 'Каркас',
     toggleWireframe: 'Перемкнути каркасний режим',
 
-    // Text
     format: 'Формат',
     bold: 'Жирний',
     italic: 'Курсив',
@@ -563,7 +514,6 @@ export const translations = {
     fontFamily: 'Сімейство шрифтів',
     selectTextObject: 'Виберіть текстовий об\'єкт для редагування',
 
-    // Vectors
     split: 'Розділити',
     splitVector: 'Розділити вектор на підшляхи',
     splitByCircle: 'Розділити за колом',
@@ -577,7 +527,6 @@ export const translations = {
     allSizesLocked: 'Всі розміри заблоковані',
     selectVectorToSplit: 'Виберіть векторний шлях для розділення',
 
-    // Snap
     snap: 'Прив\'язка',
     snapEnabled: 'Прив\'язка увімкнена',
     toggleSnap: 'Перемкнути прив\'язку',
@@ -591,7 +540,6 @@ export const translations = {
     inner: 'Внутрішній',
     outer: 'Зовнішній',
 
-    // Outlines
     verify: 'Перевірити',
     verifyOutlines: 'Перевірити контури',
     center: 'Центр',
@@ -601,7 +549,6 @@ export const translations = {
     open: 'Відкритий',
     selectOutlineToVerify: 'Виберіть контур для перевірки',
 
-    // Coloring
     colorMode: 'Режим забарвлення',
     fillAndStroke: 'Заливка та обводка',
     strokeOnly: 'Тільки обводка',
@@ -611,7 +558,6 @@ export const translations = {
     colorEntireSymbol: 'Забарвити весь символ',
     colorBorderOnly: 'Забарвити тільки межу',
 
-    // Dimensions (Koty)
     dimensionLines: 'Розмірні лінії',
     addDimension: 'Додати розмір',
     dimensionAngle: 'Кут розміру',
@@ -619,7 +565,6 @@ export const translations = {
     dragToRotate: 'Перетягніть для обертання',
     enterAngle: 'Введіть кут',
 
-    // Panels
     toolDefaults: 'Стандартні налаштування',
     fill: 'Заливка',
     stroke: 'Обводка',
@@ -632,10 +577,8 @@ export const translations = {
     all: 'Все',
     none: 'Жодного',
 
-    // Glass size
     glassSize: 'Розмір скла',
-    
-    // Canvas size
+
     canvasSize: 'Розмір полотна',
     canvasSizeSmall: 'Малий (100мм)',
     canvasSizeMedium: 'Середній (150мм)',
@@ -645,20 +588,17 @@ export const translations = {
     customCanvasSize: 'Власний розмір (мм)',
     applyCanvasSize: 'Застосувати',
 
-    // Scale control
     scaleControl: 'Керування масштабом',
     targetSize: 'Цільовий розмір',
     applyScale: 'Застосувати масштаб',
     currentScale: 'Поточний масштаб',
 
-    // Selection
     multiSelect: 'Множинний вибір',
     marqueeSelect: 'Вибір рамкою',
     shiftClickSelect: 'Shift+клік для додавання до вибору',
     selectAll: 'Вибрати все',
     deselectAll: 'Скасувати вибір',
 
-    // Messages
     clearCanvasConfirm: 'Очистити все полотно?',
     deleteLayersConfirm: 'Видалити {count} вибраних шарів?',
     designUpdated: 'Дизайн оновлено',
@@ -691,7 +631,6 @@ export const translations = {
     loadDesignFailed: 'Не вдалося завантажити дизайн',
     ezcadExported: 'Експортовано для Ezcad (центровано)',
 
-    // Language
     language: 'Мова',
     czech: 'Čeština',
     english: 'English',

@@ -1,11 +1,3 @@
-/**
- * Snap utilities for SVG Editor
- * Provides snapping to center, circle edges, and grid
- */
-
-/**
- * Calculate all snap points based on canvas and glass configuration
- */
 export function calculateSnapPoints(canvasMm, glassConfig, gridSize = 10) {
   const center = canvasMm / 2;
   const innerRadiusMm = glassConfig.inner / 2;
@@ -20,9 +12,6 @@ export function calculateSnapPoints(canvasMm, glassConfig, gridSize = 10) {
   };
 }
 
-/**
- * Generate grid lines for snapping
- */
 export function generateGridLines(canvasMm, gridSize) {
   const lines = [];
   for (let i = 0; i <= canvasMm; i += gridSize) {
@@ -32,10 +21,6 @@ export function generateGridLines(canvasMm, gridSize) {
   return lines;
 }
 
-/**
- * Find the nearest snap point for a given position
- * Returns snap target and guide lines to display
- */
 export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPerMm = 1) {
   const thresholdMm = threshold / pxPerMm;
   const result = {
@@ -47,14 +32,12 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
   };
 
   const { center, innerRadius, outerRadius, gridSize, canvasMm } = snapPoints;
-  
-  // Object dimensions in mm
+
   const objCenterX = x;
   const objCenterY = y;
   const objWidth = objectBBox ? objectBBox.w / pxPerMm : 0;
   const objHeight = objectBBox ? objectBBox.h / pxPerMm : 0;
 
-  // 1. Check snap to center
   const distToCenter = Math.sqrt(
     Math.pow(objCenterX - center.x, 2) + Math.pow(objCenterY - center.y, 2)
   );
@@ -72,15 +55,13 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
     return result;
   }
 
-  // 2. Check snap to inner circle edge (symbol boundary)
   const distFromCenter = Math.sqrt(
     Math.pow(objCenterX - center.x, 2) + Math.pow(objCenterY - center.y, 2)
   );
-  
-  // Check if object edge could snap to inner circle
+
   if (objectBBox) {
     const objRadius = Math.max(objWidth, objHeight) / 2;
-    const desiredDist = innerRadius - objRadius; // Distance from center where object edge touches inner circle
+    const desiredDist = innerRadius - objRadius;
     
     if (Math.abs(distFromCenter - desiredDist) < thresholdMm && desiredDist > 0) {
       const angle = Math.atan2(objCenterY - center.y, objCenterX - center.x);
@@ -99,7 +80,6 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
     }
   }
 
-  // 3. Check snap to outer circle edge (glass boundary)
   if (objectBBox) {
     const objRadius = Math.max(objWidth, objHeight) / 2;
     const desiredDist = outerRadius - objRadius;
@@ -121,7 +101,6 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
     }
   }
 
-  // 4. Check snap to grid lines
   const nearestGridX = Math.round(objCenterX / gridSize) * gridSize;
   const nearestGridY = Math.round(objCenterY / gridSize) * gridSize;
   
@@ -152,8 +131,6 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
       result.snapType = 'grid';
     }
   }
-
-  // 5. Check snap to center lines (horizontal and vertical through center)
   if (Math.abs(objCenterX - center.x) < thresholdMm) {
     result.snappedX = center.x;
     result.snapped = true;
@@ -183,9 +160,6 @@ export function findSnapTarget(x, y, objectBBox, snapPoints, threshold = 3, pxPe
   return result;
 }
 
-/**
- * Snap object to exact center of canvas
- */
 export function snapToCenter(objectBBox, canvasMm, pxPerMm) {
   const center = canvasMm / 2;
   const objWidthMm = objectBBox.w / pxPerMm;
@@ -199,20 +173,14 @@ export function snapToCenter(objectBBox, canvasMm, pxPerMm) {
   };
 }
 
-/**
- * Snap object to inner circle edge (align object edge to symbol boundary)
- */
 export function snapToInnerCircle(objectBBox, canvasMm, innerRadius, angle, pxPerMm) {
   const center = canvasMm / 2;
   const objWidthMm = objectBBox.w / pxPerMm;
   const objHeightMm = objectBBox.h / pxPerMm;
   const objRadius = Math.max(objWidthMm, objHeightMm) / 2;
-  
-  // Position object center so its edge touches the inner circle
   const distFromCenter = innerRadius - objRadius;
   
   if (distFromCenter <= 0) {
-    // Object is too large, center it instead
     return snapToCenter(objectBBox, canvasMm, pxPerMm);
   }
   
@@ -227,9 +195,6 @@ export function snapToInnerCircle(objectBBox, canvasMm, innerRadius, angle, pxPe
   };
 }
 
-/**
- * Snap object to outer circle edge (align object edge to glass boundary)
- */
 export function snapToOuterCircle(objectBBox, canvasMm, outerRadius, angle, pxPerMm) {
   const center = canvasMm / 2;
   const objWidthMm = objectBBox.w / pxPerMm;
@@ -253,25 +218,19 @@ export function snapToOuterCircle(objectBBox, canvasMm, outerRadius, angle, pxPe
   };
 }
 
-/**
- * Calculate snap alignment positions for an object
- * Returns all possible snap positions the user can choose from
- */
 export function getSnapAlignmentOptions(objectBBox, canvasMm, glassConfig, pxPerMm) {
   const center = canvasMm / 2;
   const innerRadiusMm = glassConfig.inner / 2;
   const outerRadiusMm = glassConfig.outer / 2;
   
   const options = [];
-  
-  // Center snap
+
   options.push({
     id: 'center',
     label: 'Center',
     ...snapToCenter(objectBBox, canvasMm, pxPerMm),
   });
-  
-  // Cardinal direction snaps to inner circle
+
   const cardinalAngles = [
     { angle: -Math.PI / 2, label: 'Top' },
     { angle: Math.PI / 2, label: 'Bottom' },

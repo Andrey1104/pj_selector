@@ -14,15 +14,12 @@ export default function CanvasSVG({
   onPointerCoords,
   glassSize = 'small',
   wireframeMode = false,
-  // Multi-select and marquee props
   selectionMode = 'single',
   selectedLayerIds,
   setSelectedLayerIds,
-  // Dimension lines props
   dimensionLines = [],
   setDimensionLines,
   dimensionColor = '#EF4444',
-  // Snap guides props
   snapGuides = [],
   showSnapGuides = true,
   onSnapGuidesChange,
@@ -43,7 +40,6 @@ export default function CanvasSVG({
 
   const HANDLE_KEYS = ['nw','n','ne','e','se','s','sw','w'];
 
-  // Calculate snap guides based on object position
   const calculateSnapGuides = useCallback((objBBox, centerX, centerY) => {
     if (!snapEnabled || !showSnapGuides) return [];
     
@@ -57,8 +53,7 @@ export default function CanvasSVG({
     
     const objCenterX = objBBox.x + objBBox.w / 2;
     const objCenterY = objBBox.y + objBBox.h / 2;
-    
-    // Snap to canvas center
+
     if (snapToCenter) {
       const distX = Math.abs(objCenterX - canvasCenterX);
       const distY = Math.abs(objCenterY - canvasCenterY);
@@ -70,19 +65,16 @@ export default function CanvasSVG({
         guides.push({ type: 'horizontal', y: canvasCenterY, label: 'Center' });
       }
     }
-    
-    // Snap to circle boundaries
+
     if (snapToCircles) {
       const distFromCenter = Math.sqrt(
         Math.pow(objCenterX - canvasCenterX, 2) + 
         Math.pow(objCenterY - canvasCenterY, 2)
       );
-      
-      // Inner circle
+
       if (Math.abs(distFromCenter - innerRadius) < snapThreshold * localPxPerMm) {
         guides.push({ type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: innerRadius, label: 'Inner' });
       }
-      // Outer circle
       if (Math.abs(distFromCenter - outerRadius) < snapThreshold * localPxPerMm) {
         guides.push({ type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: outerRadius, label: 'Outer' });
       }
@@ -131,7 +123,6 @@ export default function CanvasSVG({
 
     if (e.target.dataset.handle && selectedId) {
       const sel = objects.find((o) => o.id === selectedId);
-      // Prevent resize if size is locked
       if (sel && !sel.locked && !sel.sizeLocked) {
         handleRef.current = { handle: e.target.dataset.handle, oldBox: getBBox(sel), origObj: sel };
       }
@@ -146,7 +137,6 @@ export default function CanvasSVG({
         if (hitTest(o, x, y)) { hit = o; break; }
       }
       if (hit) {
-        // Shift+click for multi-select
         if (e.shiftKey && setSelectedLayerIds) {
           setSelectedLayerIds(prev => {
             const next = new Set(prev);
@@ -165,7 +155,6 @@ export default function CanvasSVG({
         }
         dragRef.current = { startX: x, startY: y, origObj: hit };
       } else {
-        // Start marquee selection if in marquee mode or holding shift
         if (selectionMode === 'marquee' || e.shiftKey) {
           marqueeRef.current = { startX: x, startY: y };
           setMarqueeRect({ x, y, w: 0, h: 0 });
@@ -261,7 +250,6 @@ function onPointerMove(e) {
     const [x, y] = getCoords(e);
     onPointerCoords?.(x, y);
 
-    // Handle marquee selection drawing
     if (marqueeRef.current) {
       const { startX, startY } = marqueeRef.current;
       const nx = Math.min(startX, x);
@@ -284,8 +272,7 @@ function onPointerMove(e) {
       const dy = y - startY;
       const translated = translate(origObj, dx, dy);
       updateById(origObj.id, () => translated);
-      
-      // Calculate and show snap guides while dragging
+
       if (showSnapGuides && snapEnabled) {
         const bbox = getBBox(translated);
         const guides = calculateSnapGuides(bbox, width / 2, height / 2);
@@ -343,10 +330,8 @@ function onPointerMove(e) {
   }
 
   function onPointerUp() {
-    // Clear snap guides
     setActiveSnapGuides([]);
-    
-    // Complete marquee selection
+
     if (marqueeRef.current && marqueeRect && setSelectedLayerIds) {
       const { x, y, w, h } = marqueeRect;
       const selectedIds = new Set();
@@ -354,7 +339,6 @@ function onPointerMove(e) {
       for (const o of objects) {
         if (o.visible === false || o.locked) continue;
         const bbox = getBBox(o);
-        // Check if object intersects with marquee rectangle
         const intersects = !(
           bbox.x + bbox.w < x ||
           bbox.x > x + w ||
@@ -510,7 +494,6 @@ function onPointerMove(e) {
             x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h}
             fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1" strokeDasharray="4 4" pointerEvents="none"
           />
-          {/* Show resize handles only if not locked and not sizeLocked */}
           {!selected.locked && !selected.sizeLocked && HANDLE_KEYS.map((h) => {
             const pos = handlePos(h, selectedBox);
             return (
@@ -524,7 +507,7 @@ function onPointerMove(e) {
               />
             );
           })}
-          {/* Show lock indicator when sizeLocked */}
+
           {selected.sizeLocked && (
             <g transform={`translate(${selectedBox.x + selectedBox.w / 2}, ${selectedBox.y - 15})`}>
               <rect x="-20" y="-8" width="40" height="16" fill="#EF4444" rx="2" />
@@ -533,8 +516,7 @@ function onPointerMove(e) {
 )}
       </g>
       )}
-      
-      {/* Marquee selection rectangle */}
+
       {marqueeRect && (
         <rect
           x={marqueeRect.x}
@@ -548,8 +530,7 @@ function onPointerMove(e) {
           pointerEvents="none"
         />
       )}
-      
-      {/* Snap guides visualization */}
+
       {showSnapGuides && activeSnapGuides.length > 0 && (
         <g data-testid="snap-guides" pointerEvents="none">
           {activeSnapGuides.map((guide, index) => {
@@ -623,8 +604,7 @@ function onPointerMove(e) {
           })}
         </g>
       )}
-      
-      {/* Dimension lines */}
+
       {dimensionLines.map((dim) => (
         <DimensionLine
           key={dim.id}
@@ -642,7 +622,6 @@ function onPointerMove(e) {
 }
 
 function ShapeNode({ o, wireframeMode = false }) {
-  // Wireframe mode: transparent fill, thin blue stroke
   const wireframeFill = 'none';
   const wireframeStroke = '#3B82F6';
   const wireframeStrokeWidth = 1;
@@ -686,7 +665,6 @@ function ShapeNode({ o, wireframeMode = false }) {
       );
     case 'image':
       if (wireframeMode) {
-        // In wireframe mode, show a rectangle placeholder for images
         return <rect x={o.x} y={o.y} width={o.width} height={o.height} fill="none" stroke={wireframeStroke} strokeWidth={wireframeStrokeWidth} strokeDasharray="4 2" opacity={0.5} />;
       }
       return <image x={o.x} y={o.y} width={o.width} height={o.height} href={o.href} opacity={o.opacity ?? 1} />;
@@ -736,15 +714,13 @@ function computeResizedBox(oldBox, handle, mx, my) {
   return { x: nx, y: ny, w: Math.max(1, nw), h: Math.max(1, nh) };
 }
 
-// DimensionLine component with drag-to-rotate functionality
 function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const lineRef = useRef(null);
   
   const { x1, y1, x2, y2, angle = 0, length = 50 } = dimension;
-  
-  // Calculate line endpoints based on center position and angle
+
   const centerX = x1 || 320;
   const centerY = y1 || 320;
   const halfLength = (length * pxPerMm) / 2;
@@ -754,11 +730,9 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
   const startY = centerY - halfLength * Math.sin(angleRad);
   const endX = centerX + halfLength * Math.cos(angleRad);
   const endY = centerY + halfLength * Math.sin(angleRad);
-  
-  // Arrow head size
+
   const arrowSize = 8;
-  
-  // Calculate arrow points
+
   const arrowAngle1 = angleRad + Math.PI + Math.PI / 6;
   const arrowAngle2 = angleRad + Math.PI - Math.PI / 6;
   const arrowAngle3 = angleRad + Math.PI / 6;
@@ -787,13 +761,11 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
       
       const mouseX = ((e.clientX - rect.left) / rect.width) * svgWidth;
       const mouseY = ((e.clientY - rect.top) / rect.height) * svgHeight;
-      
-      // Calculate angle from center to mouse position
+
       const dx = mouseX - centerX;
       const dy = mouseY - centerY;
       let newAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-      
-      // Snap to 15-degree increments if shift is held
+
       if (e.shiftKey) {
         newAngle = Math.round(newAngle / 15) * 15;
       }
@@ -821,7 +793,6 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
       onMouseLeave={() => setIsHovered(false)}
       style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
     >
-      {/* Main line */}
       <line
         x1={startX}
         y1={startY}
@@ -831,8 +802,7 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
         strokeWidth={2}
         strokeLinecap="round"
       />
-      
-      {/* Arrow heads */}
+
       <polygon
         points={`${startX},${startY} ${arrow1} ${arrow2}`}
         fill={color}
@@ -841,8 +811,7 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
         points={`${endX},${endY} ${arrow3} ${arrow4}`}
         fill={color}
       />
-      
-      {/* Rotation handle (end circle) */}
+
       <circle
         cx={endX}
         cy={endY}
@@ -853,8 +822,7 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
         onMouseDown={handleMouseDown}
         style={{ cursor: 'grab' }}
       />
-      
-      {/* Center drag handle */}
+
       <circle
         cx={centerX}
         cy={centerY}
@@ -864,12 +832,11 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
         strokeWidth={2}
         onMouseDown={(e) => {
           e.stopPropagation();
-          // Could add position dragging here
+
         }}
         style={{ cursor: 'move' }}
       />
-      
-      {/* Angle indicator when hovering or dragging */}
+
       {(isHovered || isDragging) && (
         <g>
           <rect
@@ -892,8 +859,7 @@ function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
           </text>
         </g>
       )}
-      
-      {/* Length indicator */}
+
       <text
         x={centerX + 15 * Math.cos(angleRad - Math.PI / 2)}
         y={centerY + 15 * Math.sin(angleRad - Math.PI / 2)}

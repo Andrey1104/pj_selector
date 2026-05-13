@@ -393,7 +393,6 @@ export function approximatePathToPoints(pathEl, baseSamples = 500) {
   }
 }
 
-// Mirror SVG path horizontally around a center X coordinate
 export function mirrorSvgPathHorizontal(d, centerX) {
   const commands = parsePath(d);
   const mirrored = commands.map(c => {
@@ -401,7 +400,6 @@ export function mirrorSvgPathHorizontal(d, centerX) {
     if (newCmd.x !== undefined) newCmd.x = centerX + (centerX - newCmd.x);
     if (newCmd.x1 !== undefined) newCmd.x1 = centerX + (centerX - newCmd.x1);
     if (newCmd.x2 !== undefined) newCmd.x2 = centerX + (centerX - newCmd.x2);
-    // For arc commands, flip the sweep flag
     if (c.cmd === 'A' && newCmd.sweep !== undefined) {
       newCmd.sweep = newCmd.sweep === 0 ? 1 : 0;
     }
@@ -410,7 +408,6 @@ export function mirrorSvgPathHorizontal(d, centerX) {
   return serializePath(mirrored);
 }
 
-// Mirror SVG path vertically around a center Y coordinate
 export function mirrorSvgPathVertical(d, centerY) {
   const commands = parsePath(d);
   const mirrored = commands.map(c => {
@@ -418,7 +415,6 @@ export function mirrorSvgPathVertical(d, centerY) {
     if (newCmd.y !== undefined) newCmd.y = centerY + (centerY - newCmd.y);
     if (newCmd.y1 !== undefined) newCmd.y1 = centerY + (centerY - newCmd.y1);
     if (newCmd.y2 !== undefined) newCmd.y2 = centerY + (centerY - newCmd.y2);
-    // For arc commands, flip the sweep flag
     if (c.cmd === 'A' && newCmd.sweep !== undefined) {
       newCmd.sweep = newCmd.sweep === 0 ? 1 : 0;
     }
@@ -427,11 +423,9 @@ export function mirrorSvgPathVertical(d, centerY) {
   return serializePath(mirrored);
 }
 
-// Split a compound path into separate subpaths
 export function splitPathIntoSubpaths(d) {
   if (!d || typeof d !== 'string') return [];
-  
-  // Split on M commands while keeping the M
+
   const subpaths = [];
   const regex = /M[^M]*/gi;
   let match;
@@ -446,7 +440,6 @@ export function splitPathIntoSubpaths(d) {
   return subpaths;
 }
 
-// Verify if a path is closed (has Z command)
 export function verifyPathClosed(d) {
   if (!d || typeof d !== 'string') return { isClosed: false, hasPath: false };
   
@@ -461,7 +454,6 @@ export function verifyPathClosed(d) {
   };
 }
 
-// Calculate the center point of a path
 export function getPathCenter(d) {
   const coords = extractPathCoordinates(d);
   if (coords.length === 0) return null;
@@ -478,7 +470,6 @@ export function getPathCenter(d) {
   };
 }
 
-// Generate an inset (inner) path for rectangles
 export function generateInsetRect(x, y, width, height, insetAmount) {
   const newX = x + insetAmount;
   const newY = y + insetAmount;
@@ -493,7 +484,6 @@ export function generateInsetRect(x, y, width, height, insetAmount) {
   };
 }
 
-// Generate an inset path by offsetting all coordinates toward center
 export function generateInsetPath(d, insetAmount) {
   const coords = extractPathCoordinates(d);
   if (coords.length < 3) return d;
@@ -544,15 +534,8 @@ export function generateInsetPath(d, insetAmount) {
   return serializePath(insetCommands);
 }
 
-/**
- * Round corners of a polygon by replacing sharp corners with quadratic bezier curves
- * @param {Array} points - Array of [x, y] coordinate pairs
- * @param {number} radius - Corner radius in pixels
- * @returns {string} SVG path data with rounded corners
- */
 export function roundPolygonCorners(points, radius) {
   if (!points || points.length < 3 || radius <= 0) {
-    // Return original polygon path if invalid input
     if (!points || points.length === 0) return '';
     return 'M ' + points.map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' L ') + ' Z';
   }
@@ -565,24 +548,19 @@ export function roundPolygonCorners(points, radius) {
     const curr = points[i];
     const next = points[(i + 1) % n];
 
-    // Vectors from current point to prev and next
     const v1 = [prev[0] - curr[0], prev[1] - curr[1]];
     const v2 = [next[0] - curr[0], next[1] - curr[1]];
 
-    // Lengths of vectors
     const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
     const len2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1]);
 
     if (len1 === 0 || len2 === 0) continue;
 
-    // Normalize vectors
     const u1 = [v1[0] / len1, v1[1] / len1];
     const u2 = [v2[0] / len2, v2[1] / len2];
 
-    // Limit radius to half the shortest adjacent edge
     const maxRadius = Math.min(len1 / 2, len2 / 2, radius);
 
-    // Points on the edges where the curve starts/ends
     const p1 = [curr[0] + u1[0] * maxRadius, curr[1] + u1[1] * maxRadius];
     const p2 = [curr[0] + u2[0] * maxRadius, curr[1] + u2[1] * maxRadius];
 
@@ -592,7 +570,6 @@ export function roundPolygonCorners(points, radius) {
       d += `L ${p1[0].toFixed(2)},${p1[1].toFixed(2)} `;
     }
 
-    // Quadratic bezier with control point at the original corner
     d += `Q ${curr[0].toFixed(2)},${curr[1].toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)} `;
   }
 
@@ -600,21 +577,11 @@ export function roundPolygonCorners(points, radius) {
   return d;
 }
 
-/**
- * Round corners of a rectangle
- * @param {number} x - X position
- * @param {number} y - Y position
- * @param {number} width - Width
- * @param {number} height - Height
- * @param {number} radius - Corner radius
- * @returns {string} SVG path data with rounded corners
- */
 export function roundRectCorners(x, y, width, height, radius) {
   if (radius <= 0) {
     return `M ${x},${y} L ${x + width},${y} L ${x + width},${y + height} L ${x},${y + height} Z`;
   }
 
-  // Limit radius to half the smallest dimension
   const r = Math.min(radius, width / 2, height / 2);
 
   return `M ${x + r},${y} ` +
@@ -628,19 +595,12 @@ export function roundRectCorners(x, y, width, height, radius) {
     `Q ${x},${y} ${x + r},${y} Z`;
 }
 
-/**
- * Round corners of an SVG path by detecting sharp corners and smoothing them
- * @param {string} d - SVG path data
- * @param {number} radius - Corner radius in pixels
- * @returns {string} SVG path data with rounded corners
- */
 export function roundPathCorners(d, radius) {
   if (!d || radius <= 0) return d;
 
   const commands = parsePath(d);
   if (commands.length < 3) return d;
 
-  // Extract points from the path (only L and M commands form corners)
   const points = [];
   let isClosed = false;
 
@@ -654,7 +614,6 @@ export function roundPathCorners(d, radius) {
 
   if (points.length < 3) return d;
 
-  // If the path is closed and first/last points are the same, remove duplicate
   if (isClosed && points.length > 1) {
     const first = points[0];
     const last = points[points.length - 1];
@@ -663,10 +622,8 @@ export function roundPathCorners(d, radius) {
     }
   }
 
-  // Use polygon rounding for simple paths
   let roundedPath = roundPolygonCorners(points, radius);
 
-  // If original wasn't closed, remove the Z
   if (!isClosed) {
     roundedPath = roundedPath.replace(/Z\s*$/, '');
   }
@@ -674,12 +631,6 @@ export function roundPathCorners(d, radius) {
   return roundedPath;
 }
 
-/**
- * Apply corner rounding to an object based on its type
- * @param {Object} obj - The editor object
- * @param {number} radius - Corner radius in pixels
- * @returns {Object} Updated object with rounded corners
- */
 export function applyCornerRounding(obj, radius) {
   if (!obj || radius <= 0) return obj;
 
@@ -687,11 +638,9 @@ export function applyCornerRounding(obj, radius) {
 
   switch (obj.type) {
     case 'rect':
-      // Convert rect to svgpath with rounded corners
       result.type = 'svgpath';
       result.d = roundRectCorners(obj.x, obj.y, obj.width, obj.height, radius);
       result.cornerRadius = radius;
-      // Remove rect-specific props
       delete result.x;
       delete result.y;
       delete result.width;
@@ -703,7 +652,7 @@ export function applyCornerRounding(obj, radius) {
         result.type = 'svgpath';
         result.d = roundPolygonCorners(obj.points, radius);
         result.cornerRadius = radius;
-        result.originalPoints = obj.points; // Keep original for reference
+        result.originalPoints = obj.points;
         delete result.points;
       }
       break;
@@ -717,29 +666,16 @@ export function applyCornerRounding(obj, radius) {
       break;
 
     default:
-      // For other types (ellipse, line, text), return unchanged
       break;
   }
 
   return result;
 }
 
-/**
- * Merge two overlapping vector paths while preserving outer edges
- * Useful for laser cutting software compatibility (Ezcad)
- * @param {string} path1D - First SVG path data
- * @param {string} path2D - Second SVG path data
- * @param {number} centerX - Circle center X
- * @param {number} centerY - Circle center Y
- * @param {number} innerRadius - Inner circle radius
- * @returns {string} Merged path data with only outer edges
- */
 export function mergeVectorsPreserveOuter(path1D, path2D, centerX, centerY, innerRadius) {
-  // Extract coordinates from both paths
   const coords1 = extractPathCoordinates(path1D);
   const coords2 = extractPathCoordinates(path2D);
-  
-  // Filter to keep only points outside the inner radius
+
   const filterOuterPoints = (coords) => {
     return coords.filter(([x, y]) => {
       const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
@@ -749,20 +685,15 @@ export function mergeVectorsPreserveOuter(path1D, path2D, centerX, centerY, inne
   
   const outer1 = filterOuterPoints(coords1);
   const outer2 = filterOuterPoints(coords2);
-  
-  // Combine outer points
   const allOuter = [...outer1, ...outer2];
-  
   if (allOuter.length < 2) return path1D;
-  
-  // Sort points by angle around center for proper path reconstruction
+
   const sortedPoints = allOuter.sort((a, b) => {
     const angleA = Math.atan2(a[1] - centerY, a[0] - centerX);
     const angleB = Math.atan2(b[1] - centerY, b[0] - centerX);
     return angleA - angleB;
   });
-  
-  // Reconstruct path
+
   let d = `M ${sortedPoints[0][0].toFixed(2)},${sortedPoints[0][1].toFixed(2)}`;
   for (let i = 1; i < sortedPoints.length; i++) {
     d += ` L ${sortedPoints[i][0].toFixed(2)},${sortedPoints[i][1].toFixed(2)}`;
@@ -772,15 +703,6 @@ export function mergeVectorsPreserveOuter(path1D, path2D, centerX, centerY, inne
   return d;
 }
 
-/**
- * Split a path into parts inside and outside a circle boundary
- * Useful for separating visible web content from laser-compatible content
- * @param {string} pathD - SVG path data
- * @param {number} centerX - Circle center X
- * @param {number} centerY - Circle center Y
- * @param {number} radius - Circle radius
- * @returns {Object} { inner: pathsInsideCircle, outer: pathsOutsideCircle }
- */
 export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
   const commands = parsePath(pathD);
   const innerCommands = [];
@@ -794,8 +716,7 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
     const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
     return dist < radius;
   };
-  
-  // Find intersection point between a line segment and circle
+
   const findIntersection = (x1, y1, x2, y2) => {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -812,8 +733,7 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
     const sqrtD = Math.sqrt(discriminant);
     const t1 = (-b - sqrtD) / (2 * a);
     const t2 = (-b + sqrtD) / (2 * a);
-    
-    // Return the intersection point that's within the segment
+
     for (const t of [t1, t2]) {
       if (t >= 0 && t <= 1) {
         return [x1 + t * dx, y1 + t * dy];
@@ -840,15 +760,12 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
       
       if (lastPoint) {
         const lastInside = isInside(lastPoint[0], lastPoint[1]);
-        
-        // Check for boundary crossing
         if (lastInside !== currInside) {
           const intersection = findIntersection(lastPoint[0], lastPoint[1], cmd.x, cmd.y);
           if (intersection) {
             const [ix, iy] = intersection;
             
             if (lastInside) {
-              // Going from inside to outside
               innerPath.push({ cmd: 'L', x: ix, y: iy });
               if (outerPath.length === 0) {
                 outerPath.push({ cmd: 'M', x: ix, y: iy });
@@ -856,7 +773,6 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
                 outerPath.push({ cmd: 'L', x: ix, y: iy });
               }
             } else {
-              // Going from outside to inside
               outerPath.push({ cmd: 'L', x: ix, y: iy });
               if (innerPath.length === 0) {
                 innerPath.push({ cmd: 'M', x: ix, y: iy });
@@ -867,8 +783,7 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
           }
         }
       }
-      
-      // Add point to appropriate path
+
       if (currInside) {
         if (innerPath.length === 0) {
           innerPath.push({ cmd: 'M', x: cmd.x, y: cmd.y });
@@ -885,7 +800,6 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
       
       lastPoint = [cmd.x, cmd.y];
     } else {
-      // For complex commands (C, Q, A), simplify by checking endpoints only
       const endX = cmd.x;
       const endY = cmd.y;
       const currInside = isInside(endX, endY);
@@ -907,8 +821,6 @@ export function splitByCircleBoundary(pathD, centerX, centerY, radius) {
       lastPoint = [endX, endY];
     }
   }
-  
-  // Finalize any remaining paths
   if (innerPath.length > 0) innerCommands.push(innerPath);
   if (outerPath.length > 0) outerCommands.push(outerPath);
   

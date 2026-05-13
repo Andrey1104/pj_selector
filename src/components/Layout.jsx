@@ -57,7 +57,6 @@ export default function Layout({ children }) {
 
       <footer className="border-t border-zinc-900 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between text-[11px] font-mono tracking-[0.18em] text-zinc-500">
         <span data-testid="footer-copy">© ALEDO HOLDING / GLASS DESIGN APPLICATION v2.0</span>
-        {/*<span>Powered by ASP Labs · 2026</span>*/}
         <span>{new Date().toISOString().slice(0, 10)}</span>
       </footer>
     </div>

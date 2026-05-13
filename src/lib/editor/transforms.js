@@ -180,7 +180,6 @@ export function flipObject(o, direction, centerX, centerY) {
   }
 }
 
-// True geometry mirroring - actually flips the shape, not just repositions
 export function mirrorObjectGeometry(o, direction, centerX, centerY) {
   const bbox = getBBox(o);
   const objCenterX = bbox.x + bbox.w / 2;
@@ -226,7 +225,6 @@ export function mirrorObjectGeometry(o, direction, centerX, centerY) {
       }
 
     case 'text':
-      // For text, we add a transform to flip it
       const currentTransform = o.transform || '';
       if (direction === 'horizontal') {
         return {
@@ -240,7 +238,6 @@ export function mirrorObjectGeometry(o, direction, centerX, centerY) {
         };
       }
 
-    // For rect, ellipse, circle, image - these are symmetric, so just reposition
     case 'rect':
     case 'image':
     case 'ellipse':
