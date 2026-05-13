@@ -6,13 +6,13 @@ import {
   MousePointer2, Pencil, Square, Circle, Minus, Hexagon, Type,
   Image as ImageIcon, Trash2, Save, Download, FileImage,
   RotateCcw, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown,
-  Wand2, Octagon, Triangle, RectangleHorizontal
+  Wand2, Octagon, Triangle, RectangleHorizontal, GripVertical
 } from 'lucide-react';
 import { designsApi } from '@/lib/api';
 import {
   buildSvg, buildSvgsByColor, downloadText, traceBitmap, parseSvgString, 
   getBBox, newId, traceBitmapAdvanced, centerObjectsOnCanvas,
-  CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS,
+  CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS, CANVAS_SIZE_PRESETS,
 } from '@/lib/editor-utils';
 import CanvasSVG from '@/components/editor/CanvasSVG';
 import { 
@@ -20,8 +20,16 @@ import {
 } from '@/components/editor/EditorUI';
 import { ScaleControl } from '@/components/editor/ScaleControl';
 import { AdvancedToolbar } from '@/components/editor/AdvancedToolbar';
-import { scaleObjectFromCenter } from '@/lib/editor/transforms';
-import { parsePath, serializePath } from '@/lib/editor/path-operations';
+import { scaleObjectFromCenter, mirrorObjectGeometry } from '@/lib/editor/transforms';
+import { 
+  parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter, 
+  generateInsetPath, generateInsetRect, applyCornerRounding, mergeVectorsPreserveOuter, 
+  splitByCircleBoundary 
+} from '@/lib/editor/path-operations';
+import { calculateSnapPoints, findSnapTarget, snapToCenter as snapToCenterUtil } from '@/lib/editor/snap-utils';
+import { useTranslation } from '@/lib/i18n';
+import { LanguageSelector } from '@/components/editor/LanguageSelector';
+import { Ruler } from 'lucide-react';
 
 const EllipseIcon = (props) => (
   <svg
@@ -75,6 +83,8 @@ export default function Editor() {
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [imageMode, setImageMode] = useState(null);
   const [glassSize, setGlassSize] = useState('small');
+  const [canvasSizePreset, setCanvasSizePreset] = useState('medium');
+  const [customCanvasSize, setCustomCanvasSize] = useState(150);
   const [selectedLayerIds, setSelectedLayerIds] = useState(new Set());
   const [layerScale, setLayerScale] = useState(100);
   const [originalObjectsForScale, setOriginalObjectsForScale] = useState(null);
@@ -84,7 +94,32 @@ export default function Editor() {
   const [zoom, setZoom] = useState(100);
   const [clipboard, setClipboard] = useState(null);
   const [history, setHistory] = useState({ past: [], future: [] });
+  const [wireframeMode, setWireframeMode] = useState(false);
+  const [sizesLocked, setSizesLocked] = useState(false);
+  const [outlineStatus, setOutlineStatus] = useState(null);
+  const [draggedLayerId, setDraggedLayerId] = useState(null);
+  const [dragOverLayerId, setDragOverLayerId] = useState(null);
+  const [colorMode, setColorMode] = useState('fill'); // 'fill' or 'stroke'
+  const [selectionMode, setSelectionMode] = useState('single'); // 'single' or 'marquee'
+  const [dimensionLines, setDimensionLines] = useState([]);
+  const [dimensionColor, setDimensionColor] = useState('#EF4444');
+  const [marqueeStart, setMarqueeStart] = useState(null);
+  const [marqueeEnd, setMarqueeEnd] = useState(null);
+  
+  // Snap state
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [snapToCenter, setSnapToCenter] = useState(true);
+  const [snapToCircles, setSnapToCircles] = useState(true);
+  const [showSnapGuides, setShowSnapGuides] = useState(true);
+  const [snapThreshold, setSnapThreshold] = useState(5);
+  const [snapGuides, setSnapGuides] = useState([]);
+  
+  // Corner radius state
+  const [cornerRadius, setCornerRadius] = useState(0);
+  
   const objectsRef = useRef(objects);
+  
+  const { t } = useTranslation();
   
   useEffect(() => {
     objectsRef.current = objects;
@@ -176,6 +211,41 @@ export default function Editor() {
       if (e.key === 'Escape') {
         setSelectedId(null);
         setSelectedLayerIds(new Set());
+      }
+      
+      // Text formatting shortcuts (Ctrl+B, Ctrl+I, Ctrl+U)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        if (selected?.type === 'text') {
+          const isBold = selected.fontWeight === 'bold';
+          updateSelected({ fontWeight: isBold ? 'normal' : 'bold' });
+        }
+        return;
+      }
+      
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+        e.preventDefault();
+        if (selected?.type === 'text') {
+          const isItalic = selected.fontStyle === 'italic';
+          updateSelected({ fontStyle: isItalic ? 'normal' : 'italic' });
+        }
+        return;
+      }
+      
+      if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
+        e.preventDefault();
+        if (selected?.type === 'text') {
+          const isUnderline = selected.textDecoration === 'underline';
+          updateSelected({ textDecoration: isUnderline ? 'none' : 'underline' });
+        }
+        return;
+      }
+      
+      // Select all with Ctrl+A
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAllLayers();
+        return;
       }
     };
     window.addEventListener('keydown', onKey);
@@ -334,19 +404,10 @@ export default function Editor() {
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
+    // Use true geometry mirroring
     setObjects(prev => prev.map(o => {
       if (!ids.includes(o.id)) return o;
-      const bbox = getBBox(o);
-      const objCenterX = bbox.x + bbox.w / 2;
-      const objCenterY = bbox.y + bbox.h / 2;
-
-      if (direction === 'horizontal') {
-        const newCenterX = centerX + (centerX - objCenterX);
-        return translateObject(o, newCenterX - objCenterX, 0);
-      } else {
-        const newCenterY = centerY + (centerY - objCenterY);
-        return translateObject(o, 0, newCenterY - objCenterY);
-      }
+      return mirrorObjectGeometry(o, direction, centerX, centerY);
     }));
   }
 
@@ -512,6 +573,72 @@ export default function Editor() {
     );
   }
 
+  // Drag and drop layer reordering
+  function handleLayerDragStart(e, layerId) {
+    setDraggedLayerId(layerId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', layerId);
+    // Add visual feedback
+    e.currentTarget.style.opacity = '0.5';
+  }
+
+  function handleLayerDragEnd(e) {
+    e.currentTarget.style.opacity = '1';
+    setDraggedLayerId(null);
+    setDragOverLayerId(null);
+  }
+
+  function handleLayerDragOver(e, layerId) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (layerId !== draggedLayerId) {
+      setDragOverLayerId(layerId);
+    }
+  }
+
+  function handleLayerDragLeave(e) {
+    // Only clear if we're actually leaving the element
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverLayerId(null);
+    }
+  }
+
+  function handleLayerDrop(e, targetLayerId) {
+    e.preventDefault();
+    
+    if (!draggedLayerId || draggedLayerId === targetLayerId) {
+      setDraggedLayerId(null);
+      setDragOverLayerId(null);
+      return;
+    }
+
+    pushHistory();
+    
+    setObjects((prev) => {
+      const newObjects = [...prev];
+      const draggedIndex = newObjects.findIndex(o => o.id === draggedLayerId);
+      const targetIndex = newObjects.findIndex(o => o.id === targetLayerId);
+      
+      if (draggedIndex === -1 || targetIndex === -1) return prev;
+
+      // Remove the dragged item
+      const [draggedItem] = newObjects.splice(draggedIndex, 1);
+      
+      // Calculate new target index after removal
+      const newTargetIndex = newObjects.findIndex(o => o.id === targetLayerId);
+      
+      // Insert at the correct position
+      // Since we display reversed, we need to insert after the target
+      newObjects.splice(newTargetIndex, 0, draggedItem);
+      
+      return newObjects;
+    });
+
+    setDraggedLayerId(null);
+    setDragOverLayerId(null);
+    toast.success('Layer order changed');
+  }
+
   function scaleToTargetMm(targetMm) {
     if (!largestLayerInfo || objects.length === 0) return;
     const currentSizeMm = largestLayerInfo.sizeMm;
@@ -532,6 +659,612 @@ export default function Editor() {
     pushHistory();
     const scaled = objects.map(o => scaleObjectFromCenter(o, scale, centerX, centerY));
     setObjects(scaled);
+  }
+
+  // Split selected vector into subpaths
+  function splitSelectedVector() {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) {
+      toast.error('Select an SVG path to split');
+      return;
+    }
+
+    const subpaths = splitPathIntoSubpaths(selected.d);
+    if (subpaths.length <= 1) {
+      toast.info('This path has only one subpath');
+      return;
+    }
+
+    pushHistory();
+    
+    // Create new objects for each subpath
+    const newObjects = subpaths.map((subpathD, index) => ({
+      ...selected,
+      id: newId(),
+      name: `${selected.name || 'Path'} - Part ${index + 1}`,
+      d: subpathD,
+    }));
+
+    // Remove the original and add the new subpaths
+    setObjects(prev => [
+      ...prev.filter(o => o.id !== selected.id),
+      ...newObjects,
+    ]);
+
+    setSelectedId(null);
+    setSelectedLayerIds(new Set(newObjects.map(o => o.id)));
+    toast.success(`Split into ${subpaths.length} subpaths`);
+  }
+
+  // Check if selected object can be split
+  const canSplitVector = useMemo(() => {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) return false;
+    const subpaths = splitPathIntoSubpaths(selected.d);
+    return subpaths.length > 1;
+  }, [selected]);
+
+// Glass size configuration
+  const glassConfig = useMemo(() => {
+  return glassSize === 'large'
+  ? { outer: 66, inner: 46 }
+  : { outer: 37, inner: 26 };
+  }, [glassSize]);
+  
+  // Canvas size configuration
+  const actualCanvasMm = useMemo(() => {
+    const preset = CANVAS_SIZE_PRESETS.find(p => p.id === canvasSizePreset);
+    if (preset && preset.mm !== null) {
+      return preset.mm;
+    }
+    return customCanvasSize || CANVAS_MM;
+  }, [canvasSizePreset, customCanvasSize]);
+
+  // Check if selected objects can have corner radius applied
+  const canApplyCornerRadius = useMemo(() => {
+    if (!selected) return false;
+    return ['rect', 'polygon', 'svgpath', 'path'].includes(selected.type);
+  }, [selected]);
+
+  // Apply corner rounding to selected object
+  function handleApplyCornerRadius(radius) {
+    if (!selected || !canApplyCornerRadius) {
+      toast.error('Select a shape to apply corner radius');
+      return;
+    }
+
+    pushHistory();
+    const roundedObj = applyCornerRounding(selected, radius);
+    setObjects(prev => prev.map(o => o.id === selected.id ? roundedObj : o));
+    toast.success(`Applied ${radius}px corner radius`);
+  }
+
+  // Check if we can merge vectors (need 2+ selected)
+  const canMergeVectors = useMemo(() => {
+    return selectedLayerIds.size >= 2;
+  }, [selectedLayerIds]);
+
+  // Merge selected vectors preserving outer edges
+  function handleMergeVectors() {
+    if (selectedLayerIds.size < 2) {
+      toast.error('Select at least 2 vectors to merge');
+      return;
+    }
+
+    const selectedObjs = objects.filter(o => selectedLayerIds.has(o.id));
+    const svgPaths = selectedObjs.filter(o => o.type === 'svgpath' && o.d);
+
+    if (svgPaths.length < 2) {
+      toast.error('Need at least 2 SVG paths to merge');
+      return;
+    }
+
+    pushHistory();
+
+    // Use canvas center and inner radius for merge
+    const centerX = CANVAS_W / 2;
+    const centerY = CANVAS_H / 2;
+    const innerRadius = (glassConfig.inner / 2) * PX_PER_MM;
+
+    // Merge paths
+    let mergedD = svgPaths[0].d;
+    for (let i = 1; i < svgPaths.length; i++) {
+      mergedD = mergeVectorsPreserveOuter(mergedD, svgPaths[i].d, centerX, centerY, innerRadius);
+    }
+
+    const mergedObj = {
+      ...svgPaths[0],
+      id: newId(),
+      name: 'Merged Path',
+      d: mergedD,
+    };
+
+    // Remove merged objects and add the new one
+    setObjects(prev => [
+      ...prev.filter(o => !selectedLayerIds.has(o.id)),
+      mergedObj,
+    ]);
+
+    setSelectedId(mergedObj.id);
+    setSelectedLayerIds(new Set([mergedObj.id]));
+    toast.success(`Merged ${svgPaths.length} vectors`);
+  }
+
+  // Check if we can split by circle
+  const canSplitByCircle = useMemo(() => {
+    return selected && selected.type === 'svgpath' && selected.d;
+  }, [selected]);
+
+  // Split selected vector by circle boundary
+  function handleSplitByCircle() {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) {
+      toast.error('Select an SVG path to split');
+      return;
+    }
+
+    const centerX = CANVAS_W / 2;
+    const centerY = CANVAS_H / 2;
+    const innerRadius = (glassConfig.inner / 2) * PX_PER_MM;
+
+    const { inner, outer } = splitByCircleBoundary(selected.d, centerX, centerY, innerRadius);
+
+    if (inner.length === 0 && outer.length === 0) {
+      toast.error('Could not split path by circle boundary');
+      return;
+    }
+
+    pushHistory();
+
+    const newObjects = [];
+
+    // Create inner parts (inside the circle boundary)
+    inner.forEach((pathD, index) => {
+      newObjects.push({
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Inner ${index + 1}`,
+        d: pathD,
+        stroke: '#10B981', // Green for inner
+      });
+    });
+
+    // Create outer parts (outside the circle boundary)
+    outer.forEach((pathD, index) => {
+      newObjects.push({
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Outer ${index + 1}`,
+        d: pathD,
+        stroke: '#EF4444', // Red for outer
+      });
+    });
+
+    setObjects(prev => [
+      ...prev.filter(o => o.id !== selected.id),
+      ...newObjects,
+    ]);
+
+    setSelectedId(null);
+    setSelectedLayerIds(new Set(newObjects.map(o => o.id)));
+    toast.success(`Split into ${newObjects.length} parts (${inner.length} inner, ${outer.length} outer)`);
+  }
+
+  // Snap to center
+  function handleSnapToCenter() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    const offsetX = canvasCenterX - contentCenterX;
+    const offsetY = canvasCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to center');
+  }
+
+  // Snap to inner circle
+  function handleSnapToInnerCircle() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    
+    // Calculate angle from center to current position
+    const dx = contentCenterX - canvasCenterX;
+    const dy = contentCenterY - canvasCenterY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Inner radius in pixels
+    const innerRadiusPx = (glassConfig.inner / 2) * PX_PER_MM;
+    const objRadius = Math.max(contentW, contentH) / 2;
+    const distFromCenter = innerRadiusPx - objRadius;
+
+    if (distFromCenter <= 0) {
+      // Object too large, just center it
+      handleSnapToCenter();
+      return;
+    }
+
+    // New center position
+    const newCenterX = canvasCenterX + distFromCenter * Math.cos(angle);
+    const newCenterY = canvasCenterY + distFromCenter * Math.sin(angle);
+    const offsetX = newCenterX - contentCenterX;
+    const offsetY = newCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to inner circle edge');
+  }
+
+  // Snap to outer circle
+  function handleSnapToOuterCircle() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    
+    // Calculate angle from center to current position
+    const dx = contentCenterX - canvasCenterX;
+    const dy = contentCenterY - canvasCenterY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Outer radius in pixels
+    const outerRadiusPx = (glassConfig.outer / 2) * PX_PER_MM;
+    const objRadius = Math.max(contentW, contentH) / 2;
+    const distFromCenter = outerRadiusPx - objRadius;
+
+    if (distFromCenter <= 0) {
+      handleSnapToCenter();
+      return;
+    }
+
+    // New center position
+    const newCenterX = canvasCenterX + distFromCenter * Math.cos(angle);
+    const newCenterY = canvasCenterY + distFromCenter * Math.sin(angle);
+    const offsetX = newCenterX - contentCenterX;
+    const offsetY = newCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to outer circle edge');
+  }
+
+  // Verify outlines
+  function verifyOutlines() {
+    if (!selected) {
+      toast.error('Select an object to verify');
+      return;
+    }
+
+    let status = { hasPath: false, isClosed: false, center: null };
+
+    if (selected.type === 'svgpath' && selected.d) {
+      const pathStatus = verifyPathClosed(selected.d);
+      const center = getPathCenter(selected.d);
+      status = { ...pathStatus, center };
+    } else if (selected.type === 'rect') {
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: selected.x + selected.width / 2, y: selected.y + selected.height / 2 },
+      };
+    } else if (selected.type === 'ellipse') {
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: selected.cx, y: selected.cy },
+      };
+    } else if (selected.type === 'polygon' && selected.points) {
+      const pts = selected.points;
+      const centerX = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+      const centerY = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: centerX, y: centerY },
+      };
+    }
+
+    setOutlineStatus(status);
+
+    if (status.isClosed) {
+      toast.success('Outline is closed and valid');
+    } else if (status.hasPath) {
+      toast.warning('Outline is open (not closed with Z command)');
+    } else {
+      toast.error('No valid path found');
+    }
+  }
+
+  // Generate center outline for glass cutting
+  function generateCenterOutline() {
+    if (!selected) {
+      toast.error('Select an object to generate center outline');
+      return;
+    }
+
+    const insetAmount = 5 * PX_PER_MM; // 5mm inset for center outline
+
+    pushHistory();
+
+    let centerObject = null;
+
+    if (selected.type === 'rect') {
+      const inset = generateInsetRect(selected.x, selected.y, selected.width, selected.height, insetAmount);
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Rect'} - Center`,
+        x: inset.x,
+        y: inset.y,
+        width: inset.width,
+        height: inset.height,
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else if (selected.type === 'svgpath' && selected.d) {
+      const insetD = generateInsetPath(selected.d, insetAmount);
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Center`,
+        d: insetD,
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else if (selected.type === 'ellipse') {
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Ellipse'} - Center`,
+        rx: Math.max(1, selected.rx - insetAmount),
+        ry: Math.max(1, selected.ry - insetAmount),
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else {
+      toast.error('Center outline not supported for this shape type');
+      return;
+    }
+
+    setObjects(prev => [...prev, centerObject]);
+    setSelectedId(centerObject.id);
+    toast.success('Center outline generated');
+  }
+
+  // Lock all sizes
+  function lockAllSizes() {
+    pushHistory();
+    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: true })));
+    setSizesLocked(true);
+    toast.success('All sizes locked');
+  }
+
+  // Unlock all sizes
+  function unlockAllSizes() {
+    pushHistory();
+    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: false })));
+    setSizesLocked(false);
+    toast.success(t('allSizesUnlockedMsg'));
+  }
+
+  // Scale selected objects by percentage
+  function scaleSelectedByPercent(scalePercent) {
+    const ids = getTargetIds();
+    if (ids.length === 0) return;
+    
+    pushHistory();
+    const objsToScale = objects.filter(o => ids.includes(o.id));
+    
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of objsToScale) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return scaleObjectFromCenter(o, scalePercent, centerX, centerY);
+    }));
+  }
+
+  // Apply color to symbol (fill or stroke only)
+  function applyColorToSymbol(mode) {
+    const ids = getTargetIds();
+    if (ids.length === 0) return;
+    
+    pushHistory();
+    const currentColor = selected?.fill || fill;
+    
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      if (mode === 'full') {
+        return { ...o, fill: currentColor, stroke: currentColor };
+      } else if (mode === 'border') {
+        return { ...o, fill: 'none', stroke: currentColor };
+      }
+      return o;
+    }));
+  }
+
+  // Add dimension line
+  function addDimensionLine() {
+    const newDimension = {
+      id: newId(),
+      type: 'dimension',
+      x1: CANVAS_W / 4,
+      y1: CANVAS_H / 2,
+      x2: (CANVAS_W / 4) * 3,
+      y2: CANVAS_H / 2,
+      angle: 0,
+      color: dimensionColor,
+      visible: true,
+    };
+    setDimensionLines(prev => [...prev, newDimension]);
+    toast.success(t('addDimension'));
+  }
+
+  // Update dimension line
+  function updateDimensionLine(updates) {
+    if (dimensionLines.length === 0) return;
+    const lastId = dimensionLines[dimensionLines.length - 1]?.id;
+    setDimensionLines(prev => prev.map(d => 
+      d.id === lastId ? { ...d, ...updates } : d
+    ));
+  }
+
+  // Delete dimension line
+  function deleteDimensionLine(id) {
+    setDimensionLines(prev => prev.filter(d => d.id !== id));
+  }
+
+  // Export SVG centered for Ezcad
+  function exportEzcadSVG() {
+    const drawableObjs = objects.filter((o) => o.visible !== false && o.type !== 'image');
+    if (drawableObjs.length === 0) {
+      toast.error(t('canvasEmpty'));
+      return;
+    }
+    
+    // Calculate bounding box of all objects
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of drawableObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+    
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    // Translate objects so center is at origin
+    const centeredObjs = drawableObjs.map(o => translateObject(o, -centerX, -centerY));
+    
+    // Build SVG with viewBox centered at origin
+    const viewBox = `${-width/2} ${-height/2} ${width} ${height}`;
+    const svgContent = centeredObjs.map(o => shapeToSvgElement(o)).join('\n');
+    
+    const svgString = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${width}" height="${height}">
+  <!-- Ezcad centered export - origin at center -->
+  ${svgContent}
+</svg>`;
+    
+    downloadText(svgString, `${slug(name)}__ezcad_centered.svg`, 'image/svg+xml');
+    toast.success(t('ezcadExported'));
+  }
+
+  // Helper function for SVG element generation (simplified)
+  function shapeToSvgElement(o) {
+    const style = `fill="${o.fill || 'none'}" stroke="${o.stroke || 'none'}" stroke-width="${o.strokeWidth || 1}" opacity="${o.opacity ?? 1}"`;
+    
+    switch (o.type) {
+      case 'rect':
+        return `<rect x="${o.x}" y="${o.y}" width="${o.width}" height="${o.height}" ${style} />`;
+      case 'ellipse':
+        return `<ellipse cx="${o.cx}" cy="${o.cy}" rx="${o.rx}" ry="${o.ry}" ${style} />`;
+      case 'circle':
+        return `<circle cx="${o.cx}" cy="${o.cy}" r="${o.r}" ${style} />`;
+      case 'line':
+        return `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" ${style} />`;
+      case 'polygon':
+      case 'path':
+        const pts = (o.points || []).map(p => p.join(',')).join(' ');
+        return `<polygon points="${pts}" ${style} />`;
+      case 'svgpath':
+        return `<path d="${o.d}" ${style} />`;
+      case 'text':
+        return `<text x="${o.x}" y="${o.y}" font-size="${o.fontSize || 24}" font-family="${o.fontFamily || 'Arial'}" ${style}>${o.text || ''}</text>`;
+      default:
+        return '';
+    }
   }
 
   function onUploadImage(e) {
@@ -714,21 +1447,26 @@ export default function Editor() {
           className="bg-transparent border border-zinc-800 px-3 py-2 text-sm text-zinc-300 focus:border-amber-500 focus:outline-none flex-1 min-w-[200px]"
           placeholder="Description (optional)"
         />
-        <ToolbarButton onClick={undo} testId="editor-undo" label="Undo" icon={RotateCcw} />
-        <ToolbarButton onClick={redo} testId="editor-redo" label="Redo" />
-        <ToolbarButton onClick={clearAll} testId="editor-clear" label="Clear" icon={Trash2} danger />
+        <ToolbarButton onClick={undo} testId="editor-undo" label={t('undo')} icon={RotateCcw} />
+        <ToolbarButton onClick={redo} testId="editor-redo" label={t('redo')} />
+        <ToolbarButton onClick={clearAll} testId="editor-clear" label={t('clear')} icon={Trash2} danger />
+        <LanguageSelector />
         <div className="ml-auto flex gap-2">
           <button onClick={saveDesign} disabled={saving} data-testid="editor-save"
             className="px-4 py-2 border border-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-500 transition-colors text-xs font-mono uppercase tracking-widest disabled:opacity-50">
-            <Save className="w-4 h-4 inline -mt-1 mr-1" /> {saving ? 'Saving...' : 'Save'}
+            <Save className="w-4 h-4 inline -mt-1 mr-1" /> {saving ? t('saving') : t('save')}
           </button>
           <button onClick={exportPDF} data-testid="editor-export-pdf"
             className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-400 text-xs font-mono uppercase tracking-widest">
-            <FileImage className="w-4 h-4 inline -mt-1 mr-1" /> PDF
+            <FileImage className="w-4 h-4 inline -mt-1 mr-1" /> {t('pdf')}
           </button>
           <button onClick={exportSVG} data-testid="editor-export-svg"
             className="px-4 py-2 bg-white text-black hover:bg-zinc-200 text-xs font-mono uppercase tracking-widest">
-            <Download className="w-4 h-4 inline -mt-1 mr-1" /> SVG by color
+            <Download className="w-4 h-4 inline -mt-1 mr-1" /> {t('svgByColor')}
+          </button>
+          <button onClick={exportEzcadSVG} data-testid="editor-export-ezcad"
+            className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-400 text-xs font-mono uppercase tracking-widest">
+            <Ruler className="w-4 h-4 inline -mt-1 mr-1" /> {t('exportEzcad')}
           </button>
         </div>
       </div>
@@ -745,6 +1483,7 @@ export default function Editor() {
         onFlipVertical={() => flipObjects('vertical')}
         onRotateCW={(deg) => rotateObjects(deg)}
         onRotateCCW={(deg) => rotateObjects(deg)}
+        onRotateByAngle={(deg) => rotateObjects(deg)}
         onCenterOnCanvas={centerOnCanvas}
         onBringForward={bringForward}
         onSendBackward={sendBackward}
@@ -763,6 +1502,55 @@ export default function Editor() {
         setZoom={setZoom}
         selectedObject={selected}
         onUpdateSelected={updateSelected}
+        wireframeMode={wireframeMode}
+        setWireframeMode={setWireframeMode}
+        onSplitVector={splitSelectedVector}
+        canSplitVector={canSplitVector}
+        onVerifyOutlines={verifyOutlines}
+        outlineStatus={outlineStatus}
+        onGenerateCenterOutline={generateCenterOutline}
+        sizesLocked={sizesLocked}
+        onLockAllSizes={lockAllSizes}
+        onUnlockAllSizes={unlockAllSizes}
+        // New props for scale, coloring, dimensions, and selection
+        onApplyScale={scaleSelectedByPercent}
+        colorMode={colorMode}
+        setColorMode={setColorMode}
+        onApplyColorToSymbol={applyColorToSymbol}
+        dimensionLines={dimensionLines}
+        onAddDimensionLine={addDimensionLine}
+        onUpdateDimensionLine={updateDimensionLine}
+        onDeleteDimensionLine={deleteDimensionLine}
+        dimensionColor={dimensionColor}
+        setDimensionColor={setDimensionColor}
+        selectionMode={selectionMode}
+        setSelectionMode={setSelectionMode}
+        onSelectAll={selectAllLayers}
+        onDeselectAll={deselectAllLayers}
+        // Snap props
+        snapEnabled={snapEnabled}
+        setSnapEnabled={setSnapEnabled}
+        snapToCenter={snapToCenter}
+        setSnapToCenter={setSnapToCenter}
+        snapToCircles={snapToCircles}
+        setSnapToCircles={setSnapToCircles}
+        showSnapGuides={showSnapGuides}
+        setShowSnapGuides={setShowSnapGuides}
+        snapThreshold={snapThreshold}
+        setSnapThreshold={setSnapThreshold}
+        onSnapToCenter={handleSnapToCenter}
+        onSnapToInnerCircle={handleSnapToInnerCircle}
+        onSnapToOuterCircle={handleSnapToOuterCircle}
+        // Corner radius props
+        cornerRadius={cornerRadius}
+        setCornerRadius={setCornerRadius}
+        onApplyCornerRadius={handleApplyCornerRadius}
+        canApplyCornerRadius={canApplyCornerRadius}
+        // Merge/Split vectors props
+        onMergeVectors={handleMergeVectors}
+        canMergeVectors={canMergeVectors}
+        onSplitByCircle={handleSplitByCircle}
+        canSplitByCircle={canSplitByCircle}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -782,52 +1570,89 @@ export default function Editor() {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onUploadImage} data-testid="image-file-input" />
         </aside>
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-grid-fine min-h-0 overflow-auto">
-          <div className="flex items-center gap-3 mb-4" data-testid="glass-size-switch">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Glass Size:</span>
-            <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
-              <button
-                onClick={() => setGlassSize('small')}
-                data-testid="glass-size-small"
-                className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                  glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                }`}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* Canvas size selector */}
+            <div className="flex items-center gap-2" data-testid="canvas-size-switch">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('canvasSize')}:</span>
+              <select
+                value={canvasSizePreset}
+                onChange={(e) => setCanvasSizePreset(e.target.value)}
+                data-testid="canvas-size-select"
+                className="bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
               >
-                37/26 mm
-              </button>
-              <button
-                onClick={() => setGlassSize('large')}
-                data-testid="glass-size-large"
-                className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                  glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                66/44 mm
-              </button>
+                {CANVAS_SIZE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {t(preset.labelKey)}
+                  </option>
+                ))}
+              </select>
+              {canvasSizePreset === 'custom' && (
+                <input
+                  type="number"
+                  value={customCanvasSize}
+                  onChange={(e) => setCustomCanvasSize(Math.max(50, Math.min(500, parseInt(e.target.value) || 150)))}
+                  data-testid="custom-canvas-size-input"
+                  className="w-16 bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
+                  min="50"
+                  max="500"
+                />
+              )}
+            </div>
+            
+            {/* Glass size selector */}
+            <div className="flex items-center gap-2" data-testid="glass-size-switch">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('glassSize')}:</span>
+              <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
+                <button
+                  onClick={() => setGlassSize('small')}
+                  data-testid="glass-size-small"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  37/26 mm
+                </button>
+                <button
+                  onClick={() => setGlassSize('large')}
+                  data-testid="glass-size-large"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  66/46 mm
+                </button>
+              </div>
             </div>
           </div>
           <div className="relative w-full max-w-[640px]" style={{ aspectRatio: '1/1' }}>
-            <div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
-              {CANVAS_MM} x {CANVAS_MM} mm
-            </div>
+<div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
+  {actualCanvasMm} x {actualCanvasMm} mm
+  </div>
             {largestLayerInfo && (
               <div className="absolute -top-6 right-0 font-mono text-sm font-bold text-amber-500" data-testid="largest-layer-size">
                 Max: {largestLayerInfo.sizeMm.toFixed(1)} mm
               </div>
             )}
-            <CanvasSVG
-              width={CANVAS_W} height={CANVAS_H}
-              canvasMm={CANVAS_MM}
-              objects={objects} setObjects={setObjects}
-              selectedId={selectedId} setSelectedId={setSelectedId}
-              tool={tool} setTool={setTool}
-              fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
-              bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
-              onPointerCoords={(x, y) => setPointer({ x, y })}
-              glassSize={glassSize}
-              showGrid={showGrid}
-              snapToGrid={snapToGrid}
-              gridSize={gridSize}
-            />
+<CanvasSVG
+  width={CANVAS_W} height={CANVAS_H}
+  canvasMm={actualCanvasMm}
+  objects={objects} setObjects={setObjects}
+  selectedId={selectedId} setSelectedId={setSelectedId}
+  tool={tool} setTool={setTool}
+  fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
+  bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
+  onPointerCoords={(x, y) => setPointer({ x, y })}
+  glassSize={glassSize}
+  showGrid={showGrid}
+  snapToGrid={snapToGrid}
+  gridSize={gridSize}
+  wireframeMode={wireframeMode}
+  showSnapGuides={showSnapGuides}
+  snapEnabled={snapEnabled}
+  snapToCenter={snapToCenter}
+  snapToCircles={snapToCircles}
+  snapThreshold={snapThreshold}
+  />
           </div>
         </div>
 
@@ -909,10 +1734,34 @@ export default function Editor() {
                     const sizePx = Math.max(bbox.w, bbox.h);
                     const sizeMm = sizePx / PX_PER_MM;
                     const isLargest = largestLayerInfo && largestLayerInfo.id === o.id;
+                    const isDragging = draggedLayerId === o.id;
+                    const isDragOver = dragOverLayerId === o.id && draggedLayerId !== o.id;
 
                     return (
-                      <li key={o.id} data-testid={`layer-${o.id}`}
-                        className={`flex items-center gap-1.5 border ${selectedLayerIds.has(o.id) ? 'border-blue-500 bg-blue-500/10' : o.id === selectedId ? 'border-amber-500' : 'border-zinc-800'} px-2 py-1`}>
+                      <li 
+                        key={o.id} 
+                        data-testid={`layer-${o.id}`}
+                        draggable
+                        onDragStart={(e) => handleLayerDragStart(e, o.id)}
+                        onDragEnd={handleLayerDragEnd}
+                        onDragOver={(e) => handleLayerDragOver(e, o.id)}
+                        onDragLeave={handleLayerDragLeave}
+                        onDrop={(e) => handleLayerDrop(e, o.id)}
+                        className={`flex items-center gap-1.5 border transition-all duration-150 ${
+                          isDragOver 
+                            ? 'border-amber-500 border-2 bg-amber-500/20' 
+                            : isDragging
+                              ? 'border-zinc-600 opacity-50'
+                              : selectedLayerIds.has(o.id) 
+                                ? 'border-blue-500 bg-blue-500/10' 
+                                : o.id === selectedId 
+                                  ? 'border-amber-500' 
+                                  : 'border-zinc-800'
+                        } px-2 py-1 cursor-grab active:cursor-grabbing`}
+                      >
+                        <div className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing">
+                          <GripVertical className="w-3.5 h-3.5" />
+                        </div>
                         <input type="checkbox" checked={selectedLayerIds.has(o.id)} onChange={() => toggleLayerSelection(o.id)}
                           className="w-3 h-3 accent-blue-500 cursor-pointer" data-testid={`layer-checkbox-${o.id}`} />
                         <button onClick={() => setObjects((prev) => prev.map((x) => x.id === o.id ? { ...x, visible: !(x.visible !== false) } : x))}

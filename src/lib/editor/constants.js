@@ -1,9 +1,17 @@
 export const TYPES = ['rect', 'ellipse', 'line', 'polygon', 'path', 'svgpath', 'text', 'image', 'rectset'];
-export const CANVAS_MM = 80;
+export const CANVAS_MM = 150;
 export const CANVAS_W = 640;
 export const CANVAS_H = 640;
 export const HISTORY_LIMIT = 50;
 export const PX_PER_MM = CANVAS_W / CANVAS_MM;
+
+export const CANVAS_SIZE_PRESETS = [
+  { id: 'small', labelKey: 'canvasSizeSmall', mm: 100, description: '100mm' },
+  { id: 'medium', labelKey: 'canvasSizeMedium', mm: 150, description: '150mm' },
+  { id: 'large', labelKey: 'canvasSizeLarge', mm: 200, description: '200mm' },
+  { id: 'xlarge', labelKey: 'canvasSizeXLarge', mm: 300, description: '300mm' },
+  { id: 'custom', labelKey: 'canvasSizeCustom', mm: null, description: 'Custom' },
+];
 export const DEFAULT_COLORS = ['#EF4444', '#F59E0B', '#FACC15', '#10B981', '#3B82F6', '#8B5CF6', '#FFFFFF', '#000000'];
 export const TOOLS = [
   { id: 'select', label: 'Select (V)', key: 'v', testId: 'tool-select' },

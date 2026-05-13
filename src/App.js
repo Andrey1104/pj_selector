@@ -7,10 +7,12 @@ import Editor from '@/pages/Editor';
 import Projection from '@/pages/Projection';
 import Library from '@/pages/Library';
 import { Toaster } from '@/components/ui/sonner';
+import { I18nProvider } from '@/lib/i18n';
 
 function App() {
   return (
     <div className="App">
+      <I18nProvider>
       <BrowserRouter>
         <Layout>
           <Routes>
@@ -24,6 +26,7 @@ function App() {
         </Layout>
         <Toaster theme="dark" />
       </BrowserRouter>
+      </I18nProvider>
     </div>
   );
 }

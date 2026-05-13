@@ -22,7 +22,6 @@ app = FastAPI(title="Projector Calculator Pro API")
 api_router = APIRouter(prefix="/api")
 
 
-# ===== Models =====
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -31,9 +30,7 @@ def now_iso() -> str:
 class DesignBase(BaseModel):
     name: str
     description: Optional[str] = ""
-    # Canonical canvas state (strokes/layers serialized as JSON-compatible structure)
     canvas_data: Dict[str, Any] = Field(default_factory=dict)
-    # Optional preview thumbnail (data URL)
     thumbnail: Optional[str] = None
     width: int = 800
     height: int = 800
@@ -72,7 +69,6 @@ class ProjectionCalcBase(BaseModel):
     projection_height_cm: int = 900
     custom_symbol_id: Optional[str] = None
     room_photo_id: Optional[str] = None
-    # Computed
     projection_diameter_cm: Optional[float] = None
     illuminance_factor: Optional[float] = None
 
@@ -91,7 +87,7 @@ class RoomPhoto(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    data_url: str  # base64 encoded image data url
+    data_url: str
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -100,14 +96,12 @@ class RoomPhotoCreate(BaseModel):
     data_url: str
 
 
-# ===== Routes =====
 
 @api_router.get("/")
 async def root():
     return {"message": "Projector Calculator Pro API", "version": "1.0.0"}
 
 
-# --- Designs ---
 @api_router.post("/designs", response_model=Design)
 async def create_design(payload: DesignCreate):
     design = Design(**payload.model_dump())
@@ -149,7 +143,6 @@ async def delete_design(design_id: str):
     return {"ok": True}
 
 
-# --- Projections ---
 @api_router.post("/projections", response_model=ProjectionCalc)
 async def create_projection(payload: ProjectionCalcCreate):
     proj = ProjectionCalc(**payload.model_dump())
@@ -171,7 +164,6 @@ async def delete_projection(proj_id: str):
     return {"ok": True}
 
 
-# --- Room photos ---
 @api_router.post("/room-photos", response_model=RoomPhoto)
 async def create_room_photo(payload: RoomPhotoCreate):
     photo = RoomPhoto(**payload.model_dump())
