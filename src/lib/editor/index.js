@@ -1,4 +1,4 @@
-export {TYPES, CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS, HISTORY_LIMIT} from './constants';
+export {TYPES, CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS, HISTORY_LIMIT, CANVAS_SIZE_PRESETS} from './constants';
 export {newId, downloadBlob, downloadText, rgbToHex, normalizeColor, perpendicularDistance, simplifyPath,} from './utils';
 export {getBBox, hitTest,} from './bbox';
 export {extractPathCoordinates, translateSvgPath, scaleSvgPath, parsePath, serializePath, pointsToSvgPath, approximatePathToPoints,} from './path-operations';
