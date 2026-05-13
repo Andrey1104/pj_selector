@@ -1,0 +1,105 @@
+{
+  "theme": "dark",
+  "archetype": "4",
+  "archetype_name": "Swiss & High-Contrast / Industrial Tech",
+  "design_philosophy": "Professional CAD software and industrial safety equipment. Precise, technical, slightly heavy/grounded. Use a strong grid, measurement annotations, and a blueprint feel. High contrast for readability in workshop environments.",
+  "colors": {
+    "background": "#09090B", 
+    "surface": "#18181B",
+    "surface_hover": "#27272A",
+    "border": "#27272A",
+    "border_focus": "#F59E0B",
+    "primary": "#F59E0B",
+    "primary_foreground": "#000000",
+    "secondary": "#EF4444",
+    "secondary_foreground": "#FFFFFF",
+    "muted": "#27272A",
+    "muted_foreground": "#A1A1AA",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA"
+  },
+  "typography": {
+    "font_family_headings": "Cabinet Grotesk",
+    "font_family_body": "IBM Plex Sans",
+    "font_family_mono": "JetBrains Mono",
+    "h1": "text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter uppercase",
+    "h2": "text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight",
+    "h3": "text-xl sm:text-2xl font-semibold",
+    "h4": "text-lg sm:text-xl font-medium",
+    "body": "text-base leading-relaxed",
+    "small": "text-sm text-muted-foreground",
+    "labels_metrics": "text-xs font-mono uppercase tracking-[0.2em] text-amber-500"
+  },
+  "spacing_and_layout": {
+    "philosophy": "Strict grid hierarchy, dense and compact spacing for Editor and Projection views. Generous spacing for Home marketing view.",
+    "container_padding": "p-4 sm:p-6 lg:p-8",
+    "gap_standard": "gap-4",
+    "gap_dense": "gap-2",
+    "border_radius": "rounded-sm",
+    "borders": "1px solid #27272A (zinc-800)"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-amber-500 text-black hover:bg-amber-400 font-mono uppercase text-sm tracking-widest rounded-sm transition-colors",
+      "secondary": "bg-transparent border border-zinc-700 text-white hover:bg-zinc-800 hover:border-amber-500 rounded-sm transition-colors",
+      "ghost": "bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-sm transition-colors"
+    },
+    "cards": {
+      "style": "Flat background, border border-zinc-800, no shadow. Sharp edges (rounded-sm max). Grid-border technical look."
+    },
+    "inputs": {
+      "style": "bg-zinc-950 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-sm text-sm font-mono text-white"
+    },
+    "canvas": {
+      "checkerboard": "bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAHElEQVQYV2NkYGAwYkAD////ZwxlYKSDgUEcAwA/Vw/zV61nJwAAAABJRU5ErkJggg==')] bg-repeat"
+    }
+  },
+  "motion_and_interactions": {
+    "hover": "High contrast shifts. Borders change from subtle zinc to vibrant amber.",
+    "transitions": "transition-all duration-200 ease-out",
+    "microinteractions": "Monospace numbers count up dynamically. Subtle crosshair/pulse animations on the 3D canvas."
+  },
+  "media": {
+    "images": [
+      {
+        "id": "hero_industrial_floor",
+        "url": "https://static.prod-images.emergentagent.com/jobs/f4b64c27-0c88-44ac-9c5b-bf325421a196/images/ea2525aaaaa1ed157976f38be940a3c98d5ac68465fbfb6c62477ad030dd81ca.png",
+        "category": "hero",
+        "description": "Industrial factory floor with safety projection. Use in the Home page hero section."
+      },
+      {
+        "id": "worker_3d_preview",
+        "url": "https://static.prod-images.emergentagent.com/jobs/f4b64c27-0c88-44ac-9c5b-bf325421a196/images/060236d95b3dd76a50e8d68a5ec78a4fca75f862c44a821fd36121415575d9fc.png",
+        "category": "preview",
+        "description": "3D worker preview for the Projection or Library feature showcase."
+      },
+      {
+        "id": "factory_machinery",
+        "url": "https://images.pexels.com/photos/34718930/pexels-photo-34718930.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "background",
+        "description": "Dark factory interior, use as a fallback background or for the 3D projection room photo upload placeholder."
+      },
+      {
+        "id": "blueprint_texture",
+        "url": "https://images.unsplash.com/photo-1721244654392-9c912a6eb236?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYmx1ZXByaW50JTIwYXJjaGl0ZWN0dXJlJTIwdGVjaG5pY2FsJTIwZHJhd2luZ3xlbnwwfHx8fDE3NzczNjEzODF8MA&ixlib=rb-4.1.0&q=85",
+        "category": "texture",
+        "description": "Blueprint technical drawing. Use as a subtle background pattern (opacity 10-20%) behind feature sections."
+      }
+    ],
+    "icons": {
+      "library": "lucide-react",
+      "style": "Use sharp, geometric icons. Stroke width 1.5px."
+    }
+  },
+  "page_specific_instructions": {
+    "Home": "Use 'hero_industrial_floor' for the hero right side. Large typography, high contrast. Show a mini-CAD interface mock in the hero.",
+    "Editor": "Layout: Flex container with 3 columns (Left toolbar 60px, Center canvas auto, Right sidebar 300px). Use monospace fonts for coordinates (X, Y). Include export buttons (PDF, SVG split) in a top header. The canvas should have a checkerboard background class to denote transparency.",
+    "Projection": "Full-width section containing the 3D scene. Sidebar on the right or overlaying with technical sliders (Wattage, Optics, Illuminance). Use dark, translucent glassmorphism (bg-black/60 backdrop-blur-xl border-zinc-800) for the control panel overlaying the 3D canvas.",
+    "Library": "Simple grid layout of saved designs. Cardless, showing just the thumbnail and title in monospace. Use gap-6."
+  },
+  "technical_requirements": {
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='export-pdf-button').",
+    "components": "Use Shadcn/UI for sliders, inputs, dropdowns, but heavily override the default radius to rounded-sm and border colors to match the technical theme.",
+    "canvas": "Assume HTML5 Canvas or SVG for the 2D Editor, and React Three Fiber for the 3D Projection (if functional implementation is needed, mock the visually complex parts if libraries are unavailable, but provide the layout wrapper)."
+  }
+}
