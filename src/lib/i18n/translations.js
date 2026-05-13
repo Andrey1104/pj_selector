@@ -170,6 +170,16 @@ export const translations = {
 
     // Glass size
     glassSize: 'Velikost skla',
+    
+    // Canvas size
+    canvasSize: 'Velikost plátna',
+    canvasSizeSmall: 'Malé (100mm)',
+    canvasSizeMedium: 'Střední (150mm)',
+    canvasSizeLarge: 'Velké (200mm)',
+    canvasSizeXLarge: 'Extra velké (300mm)',
+    canvasSizeCustom: 'Vlastní',
+    customCanvasSize: 'Vlastní velikost (mm)',
+    applyCanvasSize: 'Použít',
 
     // Scale control
     scaleControl: 'Ovládání měřítka',
@@ -221,6 +231,7 @@ export const translations = {
     language: 'Jazyk',
     czech: 'Čeština',
     english: 'English',
+    ukrainian: 'Українська',
   },
 
   en: {
@@ -391,6 +402,16 @@ export const translations = {
 
     // Glass size
     glassSize: 'Glass Size',
+    
+    // Canvas size
+    canvasSize: 'Canvas Size',
+    canvasSizeSmall: 'Small (100mm)',
+    canvasSizeMedium: 'Medium (150mm)',
+    canvasSizeLarge: 'Large (200mm)',
+    canvasSizeXLarge: 'Extra Large (300mm)',
+    canvasSizeCustom: 'Custom',
+    customCanvasSize: 'Custom size (mm)',
+    applyCanvasSize: 'Apply',
 
     // Scale control
     scaleControl: 'Scale Control',
@@ -442,6 +463,239 @@ export const translations = {
     language: 'Language',
     czech: 'Čeština',
     english: 'English',
+    ukrainian: 'Українська',
+  },
+
+  uk: {
+    // Header
+    designName: 'Назва дизайну',
+    description: 'Опис (необов\'язково)',
+    undo: 'Скасувати',
+    redo: 'Повторити',
+    clear: 'Очистити',
+    save: 'Зберегти',
+    saving: 'Збереження...',
+    pdf: 'PDF',
+    svgByColor: 'SVG за кольором',
+    exportEzcad: 'Експорт для Ezcad',
+
+    // Tools
+    select: 'Вибір',
+    brush: 'Пензель',
+    rectangle: 'Прямокутник',
+    square: 'Квадрат',
+    ellipse: 'Еліпс',
+    circle: 'Коло',
+    line: 'Лінія',
+    polygon: 'Багатокутник',
+    triangle: 'Трикутник',
+    octagon: 'Восьмикутник',
+    text: 'Текст',
+    uploadImage: 'Завантажити зображення',
+    traceBitmap: 'Трасувати растр',
+    dimensionLine: 'Розмірна лінія',
+
+    // Toolbar tabs
+    transform: 'Трансформація',
+    arrange: 'Упорядкування',
+    edit: 'Редагування',
+    view: 'Вигляд',
+    textTab: 'Текст',
+    vectors: 'Вектори',
+    outlines: 'Контури',
+    coloring: 'Забарвлення',
+    dimensions: 'Розміри',
+
+    // Transform
+    align: 'Вирівняти',
+    alignLeft: 'Вирівняти ліворуч',
+    alignCenter: 'Вирівняти по центру (Г)',
+    alignRight: 'Вирівняти праворуч',
+    alignTop: 'Вирівняти вгору',
+    alignCenterV: 'Вирівняти по центру (В)',
+    alignBottom: 'Вирівняти внизу',
+    flip: 'Відобразити',
+    flipHorizontal: 'Відобразити горизонтально',
+    flipVertical: 'Відобразити вертикально',
+    rotate: 'Повернути',
+    rotateCW: 'Повернути +90°',
+    rotateCCW: 'Повернути -90°',
+    rotation: 'Обертання',
+    angle: 'Кут',
+    degrees: 'градусів',
+    position: 'Позиція',
+    centerOnCanvas: 'Центрувати на полотні',
+    scale: 'Масштаб',
+    scalePercent: 'Масштаб %',
+
+    // Arrange
+    order: 'Порядок',
+    bringForward: 'Перемістити вперед',
+    sendBackward: 'Перемістити назад',
+    visibility: 'Видимість',
+    toggleVisibility: 'Перемкнути видимість',
+    toggleLock: 'Перемкнути блокування',
+
+    // Edit
+    clipboard: 'Буфер обміну',
+    copy: 'Копіювати',
+    paste: 'Вставити',
+    delete: 'Видалити',
+
+    // View
+    grid: 'Сітка',
+    toggleGrid: 'Перемкнути сітку',
+    snapToGrid: 'Прив\'язка до сітки',
+    gridSize: 'Розмір сітки',
+    zoom: 'Масштаб',
+    zoomIn: 'Збільшити',
+    zoomOut: 'Зменшити',
+    resetZoom: 'Скинути масштаб',
+    wireframe: 'Каркас',
+    toggleWireframe: 'Перемкнути каркасний режим',
+
+    // Text
+    format: 'Формат',
+    bold: 'Жирний',
+    italic: 'Курсив',
+    underline: 'Підкреслення',
+    size: 'Розмір',
+    fontFamily: 'Сімейство шрифтів',
+    selectTextObject: 'Виберіть текстовий об\'єкт для редагування',
+
+    // Vectors
+    split: 'Розділити',
+    splitVector: 'Розділити вектор на підшляхи',
+    splitByCircle: 'Розділити за колом',
+    merge: 'Об\'єднати',
+    mergeVectors: 'Об\'єднати вектори',
+    cornerRadius: 'Радіус кутів',
+    preserveOuter: 'Зберегти зовнішні краї',
+    sizeLock: 'Блокування розміру',
+    lockAllSizes: 'Заблокувати всі розміри',
+    unlockAllSizes: 'Розблокувати всі розміри',
+    allSizesLocked: 'Всі розміри заблоковані',
+    selectVectorToSplit: 'Виберіть векторний шлях для розділення',
+
+    // Snap
+    snap: 'Прив\'язка',
+    snapEnabled: 'Прив\'язка увімкнена',
+    toggleSnap: 'Перемкнути прив\'язку',
+    snapTargets: 'Цілі прив\'язки',
+    snapToCenter: 'Прив\'язка до центру',
+    snapToCircles: 'Прив\'язка до кіл',
+    guides: 'Напрямні',
+    showSnapGuides: 'Показати напрямні прив\'язки',
+    threshold: 'Поріг',
+    quickSnap: 'Швидка прив\'язка',
+    inner: 'Внутрішній',
+    outer: 'Зовнішній',
+
+    // Outlines
+    verify: 'Перевірити',
+    verifyOutlines: 'Перевірити контури',
+    center: 'Центр',
+    generateCenterOutline: 'Створити центральний контур',
+    status: 'Статус',
+    closed: 'Замкнутий',
+    open: 'Відкритий',
+    selectOutlineToVerify: 'Виберіть контур для перевірки',
+
+    // Coloring
+    colorMode: 'Режим забарвлення',
+    fillAndStroke: 'Заливка та обводка',
+    strokeOnly: 'Тільки обводка',
+    fillColor: 'Колір заливки',
+    strokeColor: 'Колір обводки',
+    applyToSymbol: 'Застосувати до символу',
+    colorEntireSymbol: 'Забарвити весь символ',
+    colorBorderOnly: 'Забарвити тільки межу',
+
+    // Dimensions (Koty)
+    dimensionLines: 'Розмірні лінії',
+    addDimension: 'Додати розмір',
+    dimensionAngle: 'Кут розміру',
+    dimensionColor: 'Колір розміру',
+    dragToRotate: 'Перетягніть для обертання',
+    enterAngle: 'Введіть кут',
+
+    // Panels
+    toolDefaults: 'Стандартні налаштування',
+    fill: 'Заливка',
+    stroke: 'Обводка',
+    strokeWidth: 'Ширина обводки',
+    opacity: 'Прозорість',
+    palette: 'Палітра',
+    selected: 'Вибрано',
+    layers: 'Шари',
+    noLayersYet: 'Шарів поки немає',
+    all: 'Все',
+    none: 'Жодного',
+
+    // Glass size
+    glassSize: 'Розмір скла',
+    
+    // Canvas size
+    canvasSize: 'Розмір полотна',
+    canvasSizeSmall: 'Малий (100мм)',
+    canvasSizeMedium: 'Середній (150мм)',
+    canvasSizeLarge: 'Великий (200мм)',
+    canvasSizeXLarge: 'Дуже великий (300мм)',
+    canvasSizeCustom: 'Власний',
+    customCanvasSize: 'Власний розмір (мм)',
+    applyCanvasSize: 'Застосувати',
+
+    // Scale control
+    scaleControl: 'Керування масштабом',
+    targetSize: 'Цільовий розмір',
+    applyScale: 'Застосувати масштаб',
+    currentScale: 'Поточний масштаб',
+
+    // Selection
+    multiSelect: 'Множинний вибір',
+    marqueeSelect: 'Вибір рамкою',
+    shiftClickSelect: 'Shift+клік для додавання до вибору',
+    selectAll: 'Вибрати все',
+    deselectAll: 'Скасувати вибір',
+
+    // Messages
+    clearCanvasConfirm: 'Очистити все полотно?',
+    deleteLayersConfirm: 'Видалити {count} вибраних шарів?',
+    designUpdated: 'Дизайн оновлено',
+    designSaved: 'Дизайн збережено',
+    saveFailed: 'Помилка збереження',
+    pdfExported: 'PDF експортовано',
+    pdfRenderFailed: 'Помилка рендеру PDF',
+    canvasEmpty: 'Полотно порожнє',
+    exported: 'Експортовано {count} файлів кольорів + комбінований',
+    copied: 'Скопійовано {count} об\'єктів',
+    pasted: 'Вставлено {count} об\'єктів',
+    centered: 'Центровано {count} шарів',
+    selectLayerToCenter: 'Виберіть шар для центрування',
+    splitInto: 'Розділено на {count} підшляхів',
+    pathHasOneSubpath: 'Цей шлях має лише один підшлях',
+    selectSvgPathToSplit: 'Виберіть SVG шлях для розділення',
+    outlineClosed: 'Контур замкнутий і дійсний',
+    outlineOpen: 'Контур відкритий (не замкнутий командою Z)',
+    noValidPath: 'Дійсний шлях не знайдено',
+    selectObjectToVerify: 'Виберіть об\'єкт для перевірки',
+    centerOutlineGenerated: 'Центральний контур створено',
+    selectObjectForCenterOutline: 'Виберіть об\'єкт для створення центрального контуру',
+    centerOutlineNotSupported: 'Центральний контур не підтримується для цього типу форми',
+    allSizesLockedMsg: 'Всі розміри заблоковані',
+    allSizesUnlockedMsg: 'Всі розміри розблоковані',
+    layerOrderChanged: 'Порядок шарів змінено',
+    importedShapes: 'Імпортовано {count} форм з SVG',
+    traceFailed: 'Помилка трасування',
+    tracedColors: 'Трасовано в {count} кольорових шарів',
+    loadDesignFailed: 'Не вдалося завантажити дизайн',
+    ezcadExported: 'Експортовано для Ezcad (центровано)',
+
+    // Language
+    language: 'Мова',
+    czech: 'Čeština',
+    english: 'English',
+    ukrainian: 'Українська',
   },
 };
 
@@ -449,4 +703,5 @@ export const defaultLanguage = 'cs';
 export const supportedLanguages = [
   { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
   { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'uk', name: 'Українська', flag: '🇺🇦' },
 ];

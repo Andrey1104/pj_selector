@@ -12,7 +12,7 @@ import { designsApi } from '@/lib/api';
 import {
   buildSvg, buildSvgsByColor, downloadText, traceBitmap, parseSvgString, 
   getBBox, newId, traceBitmapAdvanced, centerObjectsOnCanvas,
-  CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS,
+  CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS, CANVAS_SIZE_PRESETS,
 } from '@/lib/editor-utils';
 import CanvasSVG from '@/components/editor/CanvasSVG';
 import { 
@@ -83,6 +83,8 @@ export default function Editor() {
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [imageMode, setImageMode] = useState(null);
   const [glassSize, setGlassSize] = useState('small');
+  const [canvasSizePreset, setCanvasSizePreset] = useState('medium');
+  const [customCanvasSize, setCustomCanvasSize] = useState(150);
   const [selectedLayerIds, setSelectedLayerIds] = useState(new Set());
   const [layerScale, setLayerScale] = useState(100);
   const [originalObjectsForScale, setOriginalObjectsForScale] = useState(null);
@@ -700,12 +702,21 @@ export default function Editor() {
     return subpaths.length > 1;
   }, [selected]);
 
-  // Glass size configuration
+// Glass size configuration
   const glassConfig = useMemo(() => {
-    return glassSize === 'large' 
-      ? { outer: 66, inner: 46 }
-      : { outer: 37, inner: 26 };
+  return glassSize === 'large'
+  ? { outer: 66, inner: 46 }
+  : { outer: 37, inner: 26 };
   }, [glassSize]);
+  
+  // Canvas size configuration
+  const actualCanvasMm = useMemo(() => {
+    const preset = CANVAS_SIZE_PRESETS.find(p => p.id === canvasSizePreset);
+    if (preset && preset.mm !== null) {
+      return preset.mm;
+    }
+    return customCanvasSize || CANVAS_MM;
+  }, [canvasSizePreset, customCanvasSize]);
 
   // Check if selected objects can have corner radius applied
   const canApplyCornerRadius = useMemo(() => {
@@ -1559,53 +1570,89 @@ export default function Editor() {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onUploadImage} data-testid="image-file-input" />
         </aside>
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-grid-fine min-h-0 overflow-auto">
-          <div className="flex items-center gap-3 mb-4" data-testid="glass-size-switch">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Glass Size:</span>
-            <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
-              <button
-                onClick={() => setGlassSize('small')}
-                data-testid="glass-size-small"
-                className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                  glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                }`}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* Canvas size selector */}
+            <div className="flex items-center gap-2" data-testid="canvas-size-switch">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('canvasSize')}:</span>
+              <select
+                value={canvasSizePreset}
+                onChange={(e) => setCanvasSizePreset(e.target.value)}
+                data-testid="canvas-size-select"
+                className="bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
               >
-                37/26 mm
-              </button>
-              <button
-                onClick={() => setGlassSize('large')}
-                data-testid="glass-size-large"
-                className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                  glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                66/46 mm
-              </button>
+                {CANVAS_SIZE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {t(preset.labelKey)}
+                  </option>
+                ))}
+              </select>
+              {canvasSizePreset === 'custom' && (
+                <input
+                  type="number"
+                  value={customCanvasSize}
+                  onChange={(e) => setCustomCanvasSize(Math.max(50, Math.min(500, parseInt(e.target.value) || 150)))}
+                  data-testid="custom-canvas-size-input"
+                  className="w-16 bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
+                  min="50"
+                  max="500"
+                />
+              )}
+            </div>
+            
+            {/* Glass size selector */}
+            <div className="flex items-center gap-2" data-testid="glass-size-switch">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('glassSize')}:</span>
+              <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
+                <button
+                  onClick={() => setGlassSize('small')}
+                  data-testid="glass-size-small"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  37/26 mm
+                </button>
+                <button
+                  onClick={() => setGlassSize('large')}
+                  data-testid="glass-size-large"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  66/46 mm
+                </button>
+              </div>
             </div>
           </div>
           <div className="relative w-full max-w-[640px]" style={{ aspectRatio: '1/1' }}>
-            <div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
-              {CANVAS_MM} x {CANVAS_MM} mm
-            </div>
+<div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
+  {actualCanvasMm} x {actualCanvasMm} mm
+  </div>
             {largestLayerInfo && (
               <div className="absolute -top-6 right-0 font-mono text-sm font-bold text-amber-500" data-testid="largest-layer-size">
                 Max: {largestLayerInfo.sizeMm.toFixed(1)} mm
               </div>
             )}
-            <CanvasSVG
-              width={CANVAS_W} height={CANVAS_H}
-              canvasMm={CANVAS_MM}
-              objects={objects} setObjects={setObjects}
-              selectedId={selectedId} setSelectedId={setSelectedId}
-              tool={tool} setTool={setTool}
-              fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
-              bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
-              onPointerCoords={(x, y) => setPointer({ x, y })}
-              glassSize={glassSize}
-              showGrid={showGrid}
-              snapToGrid={snapToGrid}
-              gridSize={gridSize}
-              wireframeMode={wireframeMode}
-            />
+<CanvasSVG
+  width={CANVAS_W} height={CANVAS_H}
+  canvasMm={actualCanvasMm}
+  objects={objects} setObjects={setObjects}
+  selectedId={selectedId} setSelectedId={setSelectedId}
+  tool={tool} setTool={setTool}
+  fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
+  bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
+  onPointerCoords={(x, y) => setPointer({ x, y })}
+  glassSize={glassSize}
+  showGrid={showGrid}
+  snapToGrid={snapToGrid}
+  gridSize={gridSize}
+  wireframeMode={wireframeMode}
+  showSnapGuides={showSnapGuides}
+  snapEnabled={snapEnabled}
+  snapToCenter={snapToCenter}
+  snapToCircles={snapToCircles}
+  snapThreshold={snapThreshold}
+  />
           </div>
         </div>
 

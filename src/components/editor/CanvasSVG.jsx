@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { getBBox, hitTest, translate, applyBBoxTransform } from '@/lib/editor-utils';
 
 
@@ -22,6 +22,14 @@ export default function CanvasSVG({
   dimensionLines = [],
   setDimensionLines,
   dimensionColor = '#EF4444',
+  // Snap guides props
+  snapGuides = [],
+  showSnapGuides = true,
+  onSnapGuidesChange,
+  snapEnabled = true,
+  snapToCenter = true,
+  snapToCircles = true,
+  snapThreshold = 5,
 }) {
   const svgRef = useRef(null);
   const drawingRef = useRef(null);
@@ -31,8 +39,57 @@ export default function CanvasSVG({
   const [marqueeRect, setMarqueeRect] = useState(null);
   const marqueeRef = useRef(null);
   const [draggingDimensionId, setDraggingDimensionId] = useState(null);
+  const [activeSnapGuides, setActiveSnapGuides] = useState([]);
 
   const HANDLE_KEYS = ['nw','n','ne','e','se','s','sw','w'];
+
+  // Calculate snap guides based on object position
+  const calculateSnapGuides = useCallback((objBBox, centerX, centerY) => {
+    if (!snapEnabled || !showSnapGuides) return [];
+    
+    const guides = [];
+    const canvasCenterX = width / 2;
+    const canvasCenterY = height / 2;
+    const localPxPerMm = width / canvasMm;
+    const glassSizeConfig = GLASS_SIZES[glassSize] || GLASS_SIZES.small;
+    const innerRadius = (glassSizeConfig.inner / 2) * localPxPerMm;
+    const outerRadius = (glassSizeConfig.outer / 2) * localPxPerMm;
+    
+    const objCenterX = objBBox.x + objBBox.w / 2;
+    const objCenterY = objBBox.y + objBBox.h / 2;
+    
+    // Snap to canvas center
+    if (snapToCenter) {
+      const distX = Math.abs(objCenterX - canvasCenterX);
+      const distY = Math.abs(objCenterY - canvasCenterY);
+      
+      if (distX < snapThreshold * localPxPerMm) {
+        guides.push({ type: 'vertical', x: canvasCenterX, label: 'Center' });
+      }
+      if (distY < snapThreshold * localPxPerMm) {
+        guides.push({ type: 'horizontal', y: canvasCenterY, label: 'Center' });
+      }
+    }
+    
+    // Snap to circle boundaries
+    if (snapToCircles) {
+      const distFromCenter = Math.sqrt(
+        Math.pow(objCenterX - canvasCenterX, 2) + 
+        Math.pow(objCenterY - canvasCenterY, 2)
+      );
+      
+      // Inner circle
+      if (Math.abs(distFromCenter - innerRadius) < snapThreshold * localPxPerMm) {
+        guides.push({ type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: innerRadius, label: 'Inner' });
+      }
+      // Outer circle
+      if (Math.abs(distFromCenter - outerRadius) < snapThreshold * localPxPerMm) {
+        guides.push({ type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: outerRadius, label: 'Outer' });
+      }
+    }
+    
+    return guides;
+  }, [snapEnabled, showSnapGuides, snapToCenter, snapToCircles, snapThreshold, width, height, canvasMm, glassSize]);
 
   function getCoords(e) {
     const svg = svgRef.current;
@@ -225,7 +282,15 @@ function onPointerMove(e) {
       const { startX, startY, origObj } = dragRef.current;
       const dx = x - startX;
       const dy = y - startY;
-      updateById(origObj.id, () => translate(origObj, dx, dy));
+      const translated = translate(origObj, dx, dy);
+      updateById(origObj.id, () => translated);
+      
+      // Calculate and show snap guides while dragging
+      if (showSnapGuides && snapEnabled) {
+        const bbox = getBBox(translated);
+        const guides = calculateSnapGuides(bbox, width / 2, height / 2);
+        setActiveSnapGuides(guides);
+      }
       return;
     }
 
@@ -278,6 +343,9 @@ function onPointerMove(e) {
   }
 
   function onPointerUp() {
+    // Clear snap guides
+    setActiveSnapGuides([]);
+    
     // Complete marquee selection
     if (marqueeRef.current && marqueeRect && setSelectedLayerIds) {
       const { x, y, w, h } = marqueeRect;
@@ -481,6 +549,81 @@ function onPointerMove(e) {
         />
       )}
       
+      {/* Snap guides visualization */}
+      {showSnapGuides && activeSnapGuides.length > 0 && (
+        <g data-testid="snap-guides" pointerEvents="none">
+          {activeSnapGuides.map((guide, index) => {
+            if (guide.type === 'vertical') {
+              return (
+                <g key={`guide-v-${index}`}>
+                  <line
+                    x1={guide.x}
+                    y1={0}
+                    x2={guide.x}
+                    y2={height}
+                    stroke="#10B981"
+                    strokeWidth="1"
+                    strokeDasharray="6 4"
+                    opacity="0.8"
+                  />
+                  {guide.label && (
+                    <g transform={`translate(${guide.x + 5}, 20)`}>
+                      <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2" />
+                      <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                    </g>
+                  )}
+                </g>
+              );
+            }
+            if (guide.type === 'horizontal') {
+              return (
+                <g key={`guide-h-${index}`}>
+                  <line
+                    x1={0}
+                    y1={guide.y}
+                    x2={width}
+                    y2={guide.y}
+                    stroke="#10B981"
+                    strokeWidth="1"
+                    strokeDasharray="6 4"
+                    opacity="0.8"
+                  />
+                  {guide.label && (
+                    <g transform={`translate(20, ${guide.y - 5})`}>
+                      <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2" />
+                      <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                    </g>
+                  )}
+                </g>
+              );
+            }
+            if (guide.type === 'circle') {
+              return (
+                <g key={`guide-c-${index}`}>
+                  <circle
+                    cx={guide.cx}
+                    cy={guide.cy}
+                    r={guide.r}
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="2"
+                    strokeDasharray="8 4"
+                    opacity="0.8"
+                  />
+                  {guide.label && (
+                    <g transform={`translate(${guide.cx + guide.r + 5}, ${guide.cy})`}>
+                      <rect x="-2" y="-10" width="40" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2" />
+                      <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                    </g>
+                  )}
+                </g>
+              );
+            }
+            return null;
+          })}
+        </g>
+      )}
+      
       {/* Dimension lines */}
       {dimensionLines.map((dim) => (
         <DimensionLine
@@ -591,4 +734,177 @@ function computeResizedBox(oldBox, handle, mx, my) {
   if (handle.includes('n')) { ny = Math.min(my, y + h - 1); nh = (y + h) - ny; }
   if (handle.includes('s')) { nh = Math.max(1, my - y); }
   return { x: nx, y: ny, w: Math.max(1, nw), h: Math.max(1, nh) };
+}
+
+// DimensionLine component with drag-to-rotate functionality
+function DimensionLine({ dimension, onUpdate, color, pxPerMm }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const lineRef = useRef(null);
+  
+  const { x1, y1, x2, y2, angle = 0, length = 50 } = dimension;
+  
+  // Calculate line endpoints based on center position and angle
+  const centerX = x1 || 320;
+  const centerY = y1 || 320;
+  const halfLength = (length * pxPerMm) / 2;
+  const angleRad = (angle * Math.PI) / 180;
+  
+  const startX = centerX - halfLength * Math.cos(angleRad);
+  const startY = centerY - halfLength * Math.sin(angleRad);
+  const endX = centerX + halfLength * Math.cos(angleRad);
+  const endY = centerY + halfLength * Math.sin(angleRad);
+  
+  // Arrow head size
+  const arrowSize = 8;
+  
+  // Calculate arrow points
+  const arrowAngle1 = angleRad + Math.PI + Math.PI / 6;
+  const arrowAngle2 = angleRad + Math.PI - Math.PI / 6;
+  const arrowAngle3 = angleRad + Math.PI / 6;
+  const arrowAngle4 = angleRad - Math.PI / 6;
+  
+  const arrow1 = `${startX + arrowSize * Math.cos(arrowAngle1)},${startY + arrowSize * Math.sin(arrowAngle1)}`;
+  const arrow2 = `${startX + arrowSize * Math.cos(arrowAngle2)},${startY + arrowSize * Math.sin(arrowAngle2)}`;
+  const arrow3 = `${endX + arrowSize * Math.cos(arrowAngle3)},${endY + arrowSize * Math.sin(arrowAngle3)}`;
+  const arrow4 = `${endX + arrowSize * Math.cos(arrowAngle4)},${endY + arrowSize * Math.sin(arrowAngle4)}`;
+  
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  useEffect(() => {
+    if (!isDragging) return;
+    
+    const handleMouseMove = (e) => {
+      const svg = lineRef.current?.closest('svg');
+      if (!svg) return;
+      
+      const rect = svg.getBoundingClientRect();
+      const svgWidth = svg.viewBox.baseVal.width || 640;
+      const svgHeight = svg.viewBox.baseVal.height || 640;
+      
+      const mouseX = ((e.clientX - rect.left) / rect.width) * svgWidth;
+      const mouseY = ((e.clientY - rect.top) / rect.height) * svgHeight;
+      
+      // Calculate angle from center to mouse position
+      const dx = mouseX - centerX;
+      const dy = mouseY - centerY;
+      let newAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      
+      // Snap to 15-degree increments if shift is held
+      if (e.shiftKey) {
+        newAngle = Math.round(newAngle / 15) * 15;
+      }
+      
+      onUpdate?.({ angle: Math.round(newAngle) });
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, centerX, centerY, onUpdate]);
+  
+  return (
+    <g 
+      ref={lineRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+    >
+      {/* Main line */}
+      <line
+        x1={startX}
+        y1={startY}
+        x2={endX}
+        y2={endY}
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      
+      {/* Arrow heads */}
+      <polygon
+        points={`${startX},${startY} ${arrow1} ${arrow2}`}
+        fill={color}
+      />
+      <polygon
+        points={`${endX},${endY} ${arrow3} ${arrow4}`}
+        fill={color}
+      />
+      
+      {/* Rotation handle (end circle) */}
+      <circle
+        cx={endX}
+        cy={endY}
+        r={isDragging || isHovered ? 10 : 6}
+        fill={isDragging ? color : 'transparent'}
+        stroke={color}
+        strokeWidth={2}
+        onMouseDown={handleMouseDown}
+        style={{ cursor: 'grab' }}
+      />
+      
+      {/* Center drag handle */}
+      <circle
+        cx={centerX}
+        cy={centerY}
+        r={isDragging || isHovered ? 8 : 5}
+        fill={isHovered || isDragging ? color : 'white'}
+        stroke={color}
+        strokeWidth={2}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          // Could add position dragging here
+        }}
+        style={{ cursor: 'move' }}
+      />
+      
+      {/* Angle indicator when hovering or dragging */}
+      {(isHovered || isDragging) && (
+        <g>
+          <rect
+            x={centerX - 20}
+            y={centerY - 30}
+            width={40}
+            height={18}
+            rx={3}
+            fill="rgba(0,0,0,0.8)"
+          />
+          <text
+            x={centerX}
+            y={centerY - 17}
+            textAnchor="middle"
+            fill="white"
+            fontSize="11"
+            fontFamily="monospace"
+          >
+            {angle}°
+          </text>
+        </g>
+      )}
+      
+      {/* Length indicator */}
+      <text
+        x={centerX + 15 * Math.cos(angleRad - Math.PI / 2)}
+        y={centerY + 15 * Math.sin(angleRad - Math.PI / 2)}
+        textAnchor="middle"
+        fill={color}
+        fontSize="10"
+        fontFamily="monospace"
+        fontWeight="bold"
+      >
+        {length}mm
+      </text>
+    </g>
+  );
 }

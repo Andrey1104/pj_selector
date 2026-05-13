@@ -7,6 +7,7 @@ export {
   DEFAULT_COLORS,
   TOOLS,
   HISTORY_LIMIT,
+  CANVAS_SIZE_PRESETS,
 
   newId,
   downloadBlob,
