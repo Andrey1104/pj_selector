@@ -21,7 +21,12 @@ import {
 import { ScaleControl } from '@/components/editor/ScaleControl';
 import { AdvancedToolbar } from '@/components/editor/AdvancedToolbar';
 import { scaleObjectFromCenter, mirrorObjectGeometry } from '@/lib/editor/transforms';
-import { parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter, generateInsetPath, generateInsetRect } from '@/lib/editor/path-operations';
+import { 
+  parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter, 
+  generateInsetPath, generateInsetRect, applyCornerRounding, mergeVectorsPreserveOuter, 
+  splitByCircleBoundary 
+} from '@/lib/editor/path-operations';
+import { calculateSnapPoints, findSnapTarget, snapToCenter as snapToCenterUtil } from '@/lib/editor/snap-utils';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSelector } from '@/components/editor/LanguageSelector';
 import { Ruler } from 'lucide-react';
@@ -98,6 +103,18 @@ export default function Editor() {
   const [dimensionColor, setDimensionColor] = useState('#EF4444');
   const [marqueeStart, setMarqueeStart] = useState(null);
   const [marqueeEnd, setMarqueeEnd] = useState(null);
+  
+  // Snap state
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [snapToCenter, setSnapToCenter] = useState(true);
+  const [snapToCircles, setSnapToCircles] = useState(true);
+  const [showSnapGuides, setShowSnapGuides] = useState(true);
+  const [snapThreshold, setSnapThreshold] = useState(5);
+  const [snapGuides, setSnapGuides] = useState([]);
+  
+  // Corner radius state
+  const [cornerRadius, setCornerRadius] = useState(0);
+  
   const objectsRef = useRef(objects);
   
   const { t } = useTranslation();
@@ -683,6 +700,293 @@ export default function Editor() {
     return subpaths.length > 1;
   }, [selected]);
 
+  // Glass size configuration
+  const glassConfig = useMemo(() => {
+    return glassSize === 'large' 
+      ? { outer: 66, inner: 46 }
+      : { outer: 37, inner: 26 };
+  }, [glassSize]);
+
+  // Check if selected objects can have corner radius applied
+  const canApplyCornerRadius = useMemo(() => {
+    if (!selected) return false;
+    return ['rect', 'polygon', 'svgpath', 'path'].includes(selected.type);
+  }, [selected]);
+
+  // Apply corner rounding to selected object
+  function handleApplyCornerRadius(radius) {
+    if (!selected || !canApplyCornerRadius) {
+      toast.error('Select a shape to apply corner radius');
+      return;
+    }
+
+    pushHistory();
+    const roundedObj = applyCornerRounding(selected, radius);
+    setObjects(prev => prev.map(o => o.id === selected.id ? roundedObj : o));
+    toast.success(`Applied ${radius}px corner radius`);
+  }
+
+  // Check if we can merge vectors (need 2+ selected)
+  const canMergeVectors = useMemo(() => {
+    return selectedLayerIds.size >= 2;
+  }, [selectedLayerIds]);
+
+  // Merge selected vectors preserving outer edges
+  function handleMergeVectors() {
+    if (selectedLayerIds.size < 2) {
+      toast.error('Select at least 2 vectors to merge');
+      return;
+    }
+
+    const selectedObjs = objects.filter(o => selectedLayerIds.has(o.id));
+    const svgPaths = selectedObjs.filter(o => o.type === 'svgpath' && o.d);
+
+    if (svgPaths.length < 2) {
+      toast.error('Need at least 2 SVG paths to merge');
+      return;
+    }
+
+    pushHistory();
+
+    // Use canvas center and inner radius for merge
+    const centerX = CANVAS_W / 2;
+    const centerY = CANVAS_H / 2;
+    const innerRadius = (glassConfig.inner / 2) * PX_PER_MM;
+
+    // Merge paths
+    let mergedD = svgPaths[0].d;
+    for (let i = 1; i < svgPaths.length; i++) {
+      mergedD = mergeVectorsPreserveOuter(mergedD, svgPaths[i].d, centerX, centerY, innerRadius);
+    }
+
+    const mergedObj = {
+      ...svgPaths[0],
+      id: newId(),
+      name: 'Merged Path',
+      d: mergedD,
+    };
+
+    // Remove merged objects and add the new one
+    setObjects(prev => [
+      ...prev.filter(o => !selectedLayerIds.has(o.id)),
+      mergedObj,
+    ]);
+
+    setSelectedId(mergedObj.id);
+    setSelectedLayerIds(new Set([mergedObj.id]));
+    toast.success(`Merged ${svgPaths.length} vectors`);
+  }
+
+  // Check if we can split by circle
+  const canSplitByCircle = useMemo(() => {
+    return selected && selected.type === 'svgpath' && selected.d;
+  }, [selected]);
+
+  // Split selected vector by circle boundary
+  function handleSplitByCircle() {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) {
+      toast.error('Select an SVG path to split');
+      return;
+    }
+
+    const centerX = CANVAS_W / 2;
+    const centerY = CANVAS_H / 2;
+    const innerRadius = (glassConfig.inner / 2) * PX_PER_MM;
+
+    const { inner, outer } = splitByCircleBoundary(selected.d, centerX, centerY, innerRadius);
+
+    if (inner.length === 0 && outer.length === 0) {
+      toast.error('Could not split path by circle boundary');
+      return;
+    }
+
+    pushHistory();
+
+    const newObjects = [];
+
+    // Create inner parts (inside the circle boundary)
+    inner.forEach((pathD, index) => {
+      newObjects.push({
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Inner ${index + 1}`,
+        d: pathD,
+        stroke: '#10B981', // Green for inner
+      });
+    });
+
+    // Create outer parts (outside the circle boundary)
+    outer.forEach((pathD, index) => {
+      newObjects.push({
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Outer ${index + 1}`,
+        d: pathD,
+        stroke: '#EF4444', // Red for outer
+      });
+    });
+
+    setObjects(prev => [
+      ...prev.filter(o => o.id !== selected.id),
+      ...newObjects,
+    ]);
+
+    setSelectedId(null);
+    setSelectedLayerIds(new Set(newObjects.map(o => o.id)));
+    toast.success(`Split into ${newObjects.length} parts (${inner.length} inner, ${outer.length} outer)`);
+  }
+
+  // Snap to center
+  function handleSnapToCenter() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    const offsetX = canvasCenterX - contentCenterX;
+    const offsetY = canvasCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to center');
+  }
+
+  // Snap to inner circle
+  function handleSnapToInnerCircle() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    
+    // Calculate angle from center to current position
+    const dx = contentCenterX - canvasCenterX;
+    const dy = contentCenterY - canvasCenterY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Inner radius in pixels
+    const innerRadiusPx = (glassConfig.inner / 2) * PX_PER_MM;
+    const objRadius = Math.max(contentW, contentH) / 2;
+    const distFromCenter = innerRadiusPx - objRadius;
+
+    if (distFromCenter <= 0) {
+      // Object too large, just center it
+      handleSnapToCenter();
+      return;
+    }
+
+    // New center position
+    const newCenterX = canvasCenterX + distFromCenter * Math.cos(angle);
+    const newCenterY = canvasCenterY + distFromCenter * Math.sin(angle);
+    const offsetX = newCenterX - contentCenterX;
+    const offsetY = newCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to inner circle edge');
+  }
+
+  // Snap to outer circle
+  function handleSnapToOuterCircle() {
+    const ids = getTargetIds();
+    if (ids.length === 0) {
+      toast.error('Select a layer to snap');
+      return;
+    }
+
+    pushHistory();
+    const selectedObjs = objects.filter(o => ids.includes(o.id));
+    
+    // Calculate bounding box of selection
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const o of selectedObjs) {
+      const bbox = getBBox(o);
+      minX = Math.min(minX, bbox.x);
+      minY = Math.min(minY, bbox.y);
+      maxX = Math.max(maxX, bbox.x + bbox.w);
+      maxY = Math.max(maxY, bbox.y + bbox.h);
+    }
+
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    const canvasCenterX = CANVAS_W / 2;
+    const canvasCenterY = CANVAS_H / 2;
+    
+    // Calculate angle from center to current position
+    const dx = contentCenterX - canvasCenterX;
+    const dy = contentCenterY - canvasCenterY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Outer radius in pixels
+    const outerRadiusPx = (glassConfig.outer / 2) * PX_PER_MM;
+    const objRadius = Math.max(contentW, contentH) / 2;
+    const distFromCenter = outerRadiusPx - objRadius;
+
+    if (distFromCenter <= 0) {
+      handleSnapToCenter();
+      return;
+    }
+
+    // New center position
+    const newCenterX = canvasCenterX + distFromCenter * Math.cos(angle);
+    const newCenterY = canvasCenterY + distFromCenter * Math.sin(angle);
+    const offsetX = newCenterX - contentCenterX;
+    const offsetY = newCenterY - contentCenterY;
+
+    setObjects(prev => prev.map(o => {
+      if (!ids.includes(o.id)) return o;
+      return translateObject(o, offsetX, offsetY);
+    }));
+
+    toast.success('Snapped to outer circle edge');
+  }
+
   // Verify outlines
   function verifyOutlines() {
     if (!selected) {
@@ -1212,6 +1516,30 @@ export default function Editor() {
         setSelectionMode={setSelectionMode}
         onSelectAll={selectAllLayers}
         onDeselectAll={deselectAllLayers}
+        // Snap props
+        snapEnabled={snapEnabled}
+        setSnapEnabled={setSnapEnabled}
+        snapToCenter={snapToCenter}
+        setSnapToCenter={setSnapToCenter}
+        snapToCircles={snapToCircles}
+        setSnapToCircles={setSnapToCircles}
+        showSnapGuides={showSnapGuides}
+        setShowSnapGuides={setShowSnapGuides}
+        snapThreshold={snapThreshold}
+        setSnapThreshold={setSnapThreshold}
+        onSnapToCenter={handleSnapToCenter}
+        onSnapToInnerCircle={handleSnapToInnerCircle}
+        onSnapToOuterCircle={handleSnapToOuterCircle}
+        // Corner radius props
+        cornerRadius={cornerRadius}
+        setCornerRadius={setCornerRadius}
+        onApplyCornerRadius={handleApplyCornerRadius}
+        canApplyCornerRadius={canApplyCornerRadius}
+        // Merge/Split vectors props
+        onMergeVectors={handleMergeVectors}
+        canMergeVectors={canMergeVectors}
+        onSplitByCircle={handleSplitByCircle}
+        canSplitByCircle={canSplitByCircle}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -1250,7 +1578,7 @@ export default function Editor() {
                   glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                66/44 mm
+                66/46 mm
               </button>
             </div>
           </div>

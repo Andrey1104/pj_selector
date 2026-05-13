@@ -1,5 +1,5 @@
 export const TYPES = ['rect', 'ellipse', 'line', 'polygon', 'path', 'svgpath', 'text', 'image', 'rectset'];
-export const CANVAS_MM = 80;
+export const CANVAS_MM = 150;
 export const CANVAS_W = 640;
 export const CANVAS_H = 640;
 export const HISTORY_LIMIT = 50;

@@ -6,7 +6,8 @@ import {
   Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Lock, Unlock,
   Crosshair, Type, Bold, Italic, Underline, ALargeSmall,
   Layers, Split, Box, CheckCircle, Circle, Square, LockKeyhole, UnlockKeyhole,
-  Ruler, Palette, MousePointer2, SquareDashedMousePointer, Percent
+  Ruler, Palette, MousePointer2, SquareDashedMousePointer, Percent,
+  Target, CircleDot, Merge, Scissors, CornerDownRight
 } from 'lucide-react';
 import { IconButton, ButtonGroup, Separator, TabButton } from './EditorUI';
 import { useTranslation } from '@/lib/i18n';
@@ -105,12 +106,40 @@ export function AdvancedToolbar({
   setSelectionMode,
   onSelectAll,
   onDeselectAll,
+
+  // Snap props
+  snapEnabled,
+  setSnapEnabled,
+  snapToCenter,
+  setSnapToCenter,
+  snapToCircles,
+  setSnapToCircles,
+  showSnapGuides,
+  setShowSnapGuides,
+  snapThreshold,
+  setSnapThreshold,
+  onSnapToCenter,
+  onSnapToInnerCircle,
+  onSnapToOuterCircle,
+
+  // Corner rounding props
+  cornerRadius,
+  setCornerRadius,
+  onApplyCornerRadius,
+  canApplyCornerRadius,
+
+  // Merge/Split vectors props
+  onMergeVectors,
+  canMergeVectors,
+  onSplitByCircle,
+  canSplitByCircle,
 }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('transform');
   const [localRotation, setLocalRotation] = useState(0);
   const [localScale, setLocalScale] = useState(100);
   const [localDimensionAngle, setLocalDimensionAngle] = useState(0);
+  const [localCornerRadius, setLocalCornerRadius] = useState(5);
 
   const handleRotationInput = (e) => {
     const val = parseFloat(e.target.value) || 0;
@@ -201,6 +230,13 @@ export function AdvancedToolbar({
           testId="toolbar-tab-outlines"
         >
           {t('outlines')}
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'snap'} 
+          onClick={() => setActiveTab('snap')}
+          testId="toolbar-tab-snap"
+        >
+          {t('snap') || 'Snap'}
         </TabButton>
 
         {selectedCount > 0 && (
@@ -853,13 +889,61 @@ export function AdvancedToolbar({
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('split')}</span>
+              <ButtonGroup>
+                <IconButton 
+                  icon={Split} 
+                  title={t('splitVector')} 
+                  onClick={onSplitVector}
+                  disabled={!canSplitVector}
+                  testId="split-vector"
+                />
+                <IconButton 
+                  icon={Scissors} 
+                  title={t('splitByCircle') || 'Split by Circle'} 
+                  onClick={onSplitByCircle}
+                  disabled={!canSplitByCircle}
+                  testId="split-by-circle"
+                />
+              </ButtonGroup>
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('merge') || 'Merge'}</span>
               <IconButton 
-                icon={Split} 
-                title={t('splitVector')} 
-                onClick={onSplitVector}
-                disabled={!canSplitVector}
-                testId="split-vector"
+                icon={Merge} 
+                title={t('mergeVectors') || 'Merge Vectors'} 
+                onClick={onMergeVectors}
+                disabled={!canMergeVectors}
+                testId="merge-vectors"
               />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('cornerRadius') || 'Corners'}</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  value={localCornerRadius}
+                  onChange={(e) => setLocalCornerRadius(Number(e.target.value))}
+                  className="w-20 accent-amber-500"
+                  data-testid="corner-radius-slider"
+                />
+                <span className="text-[10px] font-mono text-zinc-400 w-8">{localCornerRadius}px</span>
+                <button
+                  onClick={() => onApplyCornerRadius?.(localCornerRadius)}
+                  disabled={!canApplyCornerRadius}
+                  className="px-2 py-1 text-[9px] font-mono uppercase bg-amber-500/20 text-amber-500 border border-amber-500/50 hover:bg-amber-500 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  data-testid="apply-corner-radius"
+                >
+                  OK
+                </button>
+              </div>
             </div>
 
             <Separator vertical />
@@ -961,6 +1045,114 @@ export function AdvancedToolbar({
                 {t('selectOutlineToVerify')}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Snap tab - new */}
+        {activeTab === 'snap' && (
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('snapEnabled') || 'Snap'}</span>
+              <IconButton 
+                icon={Magnet} 
+                title={t('toggleSnap') || 'Toggle Snap'} 
+                onClick={() => setSnapEnabled?.(!snapEnabled)}
+                active={snapEnabled}
+                testId="toggle-snap-enabled"
+              />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('snapTargets') || 'Targets'}</span>
+              <ButtonGroup>
+                <IconButton 
+                  icon={Target} 
+                  title={t('snapToCenter') || 'Snap to Center'} 
+                  onClick={() => setSnapToCenter?.(!snapToCenter)}
+                  active={snapToCenter}
+                  testId="snap-to-center"
+                />
+                <IconButton 
+                  icon={CircleDot} 
+                  title={t('snapToCircles') || 'Snap to Circles'} 
+                  onClick={() => setSnapToCircles?.(!snapToCircles)}
+                  active={snapToCircles}
+                  testId="snap-to-circles"
+                />
+                <IconButton 
+                  icon={Grid3X3} 
+                  title={t('snapToGrid')} 
+                  onClick={() => setSnapToGrid?.(!snapToGrid)}
+                  active={snapToGrid}
+                  testId="snap-to-grid-btn"
+                />
+              </ButtonGroup>
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('guides') || 'Guides'}</span>
+              <IconButton 
+                icon={Eye} 
+                title={t('showSnapGuides') || 'Show Snap Guides'} 
+                onClick={() => setShowSnapGuides?.(!showSnapGuides)}
+                active={showSnapGuides}
+                testId="show-snap-guides"
+              />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('threshold') || 'Threshold'}</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={snapThreshold || 5}
+                  onChange={(e) => setSnapThreshold?.(Number(e.target.value))}
+                  className="w-20 accent-amber-500"
+                  data-testid="snap-threshold-slider"
+                />
+                <span className="text-[10px] font-mono text-zinc-400 w-8">{snapThreshold || 5}px</span>
+              </div>
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('quickSnap') || 'Quick Snap'}</span>
+              <ButtonGroup>
+                <button
+                  onClick={onSnapToCenter}
+                  disabled={!hasSelection}
+                  className="px-2 py-1 text-[9px] font-mono uppercase text-zinc-400 border border-zinc-700 hover:border-amber-500 hover:text-amber-500 disabled:opacity-50 transition-colors"
+                  data-testid="quick-snap-center"
+                >
+                  {t('center') || 'Center'}
+                </button>
+                <button
+                  onClick={onSnapToInnerCircle}
+                  disabled={!hasSelection}
+                  className="px-2 py-1 text-[9px] font-mono uppercase text-zinc-400 border border-zinc-700 hover:border-amber-500 hover:text-amber-500 disabled:opacity-50 transition-colors"
+                  data-testid="quick-snap-inner"
+                >
+                  {t('inner') || 'Inner'}
+                </button>
+                <button
+                  onClick={onSnapToOuterCircle}
+                  disabled={!hasSelection}
+                  className="px-2 py-1 text-[9px] font-mono uppercase text-zinc-400 border border-zinc-700 hover:border-amber-500 hover:text-amber-500 disabled:opacity-50 transition-colors"
+                  data-testid="quick-snap-outer"
+                >
+                  {t('outer') || 'Outer'}
+                </button>
+              </ButtonGroup>
+            </div>
           </div>
         )}
         </div>

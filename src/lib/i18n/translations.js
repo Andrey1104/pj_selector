@@ -102,11 +102,30 @@ export const translations = {
     // Vectors
     split: 'Rozdělit',
     splitVector: 'Rozdělit vektor na subpaths',
+    splitByCircle: 'Rozdělit podle kruhu',
+    merge: 'Sloučit',
+    mergeVectors: 'Sloučit vektory',
+    cornerRadius: 'Zaoblení rohů',
+    preserveOuter: 'Zachovat vnější strany',
     sizeLock: 'Zámek velikosti',
     lockAllSizes: 'Zamknout všechny velikosti',
     unlockAllSizes: 'Odemknout všechny velikosti',
     allSizesLocked: 'Všechny velikosti jsou zamčeny',
     selectVectorToSplit: 'Vyberte vektorovou cestu k rozdělení',
+
+    // Snap
+    snap: 'Přichytit',
+    snapEnabled: 'Přichycení zapnuto',
+    toggleSnap: 'Přepnout přichycení',
+    snapTargets: 'Cíle přichycení',
+    snapToCenter: 'Přichytit ke středu',
+    snapToCircles: 'Přichytit ke kruhům',
+    guides: 'Vodítka',
+    showSnapGuides: 'Zobrazit vodítka přichycení',
+    threshold: 'Práh',
+    quickSnap: 'Rychlé přichycení',
+    inner: 'Vnitřní',
+    outer: 'Vnější',
 
     // Outlines
     verify: 'Ověřit',
@@ -304,11 +323,30 @@ export const translations = {
     // Vectors
     split: 'Split',
     splitVector: 'Split Vector into Subpaths',
+    splitByCircle: 'Split by Circle',
+    merge: 'Merge',
+    mergeVectors: 'Merge Vectors',
+    cornerRadius: 'Corner Radius',
+    preserveOuter: 'Preserve Outer Edges',
     sizeLock: 'Size Lock',
     lockAllSizes: 'Lock All Sizes',
     unlockAllSizes: 'Unlock All Sizes',
     allSizesLocked: 'All sizes are locked',
     selectVectorToSplit: 'Select a vector path to split',
+
+    // Snap
+    snap: 'Snap',
+    snapEnabled: 'Snap Enabled',
+    toggleSnap: 'Toggle Snap',
+    snapTargets: 'Snap Targets',
+    snapToCenter: 'Snap to Center',
+    snapToCircles: 'Snap to Circles',
+    guides: 'Guides',
+    showSnapGuides: 'Show Snap Guides',
+    threshold: 'Threshold',
+    quickSnap: 'Quick Snap',
+    inner: 'Inner',
+    outer: 'Outer',
 
     // Outlines
     verify: 'Verify',

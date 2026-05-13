@@ -4,7 +4,7 @@ import { getBBox, hitTest, translate, applyBBoxTransform } from '@/lib/editor-ut
 
 const GLASS_SIZES = {
   small: { outer: 37, inner: 26 },
-  large: { outer: 66, inner: 44 },
+  large: { outer: 66, inner: 46 },
 };
 
 export default function CanvasSVG({
