@@ -392,3 +392,154 @@ export function approximatePathToPoints(pathEl, baseSamples = 500) {
     return [];
   }
 }
+
+// Mirror SVG path horizontally around a center X coordinate
+export function mirrorSvgPathHorizontal(d, centerX) {
+  const commands = parsePath(d);
+  const mirrored = commands.map(c => {
+    const newCmd = { ...c };
+    if (newCmd.x !== undefined) newCmd.x = centerX + (centerX - newCmd.x);
+    if (newCmd.x1 !== undefined) newCmd.x1 = centerX + (centerX - newCmd.x1);
+    if (newCmd.x2 !== undefined) newCmd.x2 = centerX + (centerX - newCmd.x2);
+    // For arc commands, flip the sweep flag
+    if (c.cmd === 'A' && newCmd.sweep !== undefined) {
+      newCmd.sweep = newCmd.sweep === 0 ? 1 : 0;
+    }
+    return newCmd;
+  });
+  return serializePath(mirrored);
+}
+
+// Mirror SVG path vertically around a center Y coordinate
+export function mirrorSvgPathVertical(d, centerY) {
+  const commands = parsePath(d);
+  const mirrored = commands.map(c => {
+    const newCmd = { ...c };
+    if (newCmd.y !== undefined) newCmd.y = centerY + (centerY - newCmd.y);
+    if (newCmd.y1 !== undefined) newCmd.y1 = centerY + (centerY - newCmd.y1);
+    if (newCmd.y2 !== undefined) newCmd.y2 = centerY + (centerY - newCmd.y2);
+    // For arc commands, flip the sweep flag
+    if (c.cmd === 'A' && newCmd.sweep !== undefined) {
+      newCmd.sweep = newCmd.sweep === 0 ? 1 : 0;
+    }
+    return newCmd;
+  });
+  return serializePath(mirrored);
+}
+
+// Split a compound path into separate subpaths
+export function splitPathIntoSubpaths(d) {
+  if (!d || typeof d !== 'string') return [];
+  
+  // Split on M commands while keeping the M
+  const subpaths = [];
+  const regex = /M[^M]*/gi;
+  let match;
+  
+  while ((match = regex.exec(d)) !== null) {
+    const subpath = match[0].trim();
+    if (subpath) {
+      subpaths.push(subpath);
+    }
+  }
+  
+  return subpaths;
+}
+
+// Verify if a path is closed (has Z command)
+export function verifyPathClosed(d) {
+  if (!d || typeof d !== 'string') return { isClosed: false, hasPath: false };
+  
+  const hasPath = d.trim().length > 0;
+  const commands = parsePath(d);
+  const hasZ = commands.some(c => c.cmd.toUpperCase() === 'Z');
+  
+  return {
+    isClosed: hasZ,
+    hasPath,
+    commandCount: commands.length,
+  };
+}
+
+// Calculate the center point of a path
+export function getPathCenter(d) {
+  const coords = extractPathCoordinates(d);
+  if (coords.length === 0) return null;
+  
+  let sumX = 0, sumY = 0;
+  for (const [x, y] of coords) {
+    sumX += x;
+    sumY += y;
+  }
+  
+  return {
+    x: sumX / coords.length,
+    y: sumY / coords.length,
+  };
+}
+
+// Generate an inset (inner) path for rectangles
+export function generateInsetRect(x, y, width, height, insetAmount) {
+  const newX = x + insetAmount;
+  const newY = y + insetAmount;
+  const newWidth = Math.max(1, width - 2 * insetAmount);
+  const newHeight = Math.max(1, height - 2 * insetAmount);
+  
+  return {
+    x: newX,
+    y: newY,
+    width: newWidth,
+    height: newHeight,
+  };
+}
+
+// Generate an inset path by offsetting all coordinates toward center
+export function generateInsetPath(d, insetAmount) {
+  const coords = extractPathCoordinates(d);
+  if (coords.length < 3) return d;
+  
+  const center = getPathCenter(d);
+  if (!center) return d;
+  
+  const commands = parsePath(d);
+  const insetCommands = commands.map(c => {
+    const newCmd = { ...c };
+    
+    if (newCmd.x !== undefined && newCmd.y !== undefined) {
+      const dx = center.x - newCmd.x;
+      const dy = center.y - newCmd.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0) {
+        const ratio = Math.min(insetAmount / dist, 0.9);
+        newCmd.x = newCmd.x + dx * ratio;
+        newCmd.y = newCmd.y + dy * ratio;
+      }
+    }
+    
+    if (newCmd.x1 !== undefined && newCmd.y1 !== undefined) {
+      const dx = center.x - newCmd.x1;
+      const dy = center.y - newCmd.y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0) {
+        const ratio = Math.min(insetAmount / dist, 0.9);
+        newCmd.x1 = newCmd.x1 + dx * ratio;
+        newCmd.y1 = newCmd.y1 + dy * ratio;
+      }
+    }
+    
+    if (newCmd.x2 !== undefined && newCmd.y2 !== undefined) {
+      const dx = center.x - newCmd.x2;
+      const dy = center.y - newCmd.y2;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0) {
+        const ratio = Math.min(insetAmount / dist, 0.9);
+        newCmd.x2 = newCmd.x2 + dx * ratio;
+        newCmd.y2 = newCmd.y2 + dy * ratio;
+      }
+    }
+    
+    return newCmd;
+  });
+  
+  return serializePath(insetCommands);
+}

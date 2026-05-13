@@ -4,7 +4,8 @@ import {
   FlipHorizontal, FlipVertical, RotateCw, RotateCcw, Copy, Clipboard,
   Grid3X3, Magnet, ZoomIn, ZoomOut, Maximize2, Move,
   Trash2, ArrowUp, ArrowDown, Eye, EyeOff, Lock, Unlock,
-  Crosshair, Type, Bold, Italic, Underline, ALargeSmall
+  Crosshair, Type, Bold, Italic, Underline, ALargeSmall,
+  Layers, Split, Box, CheckCircle, Circle, Square, LockKeyhole, UnlockKeyhole
 } from 'lucide-react';
 import { IconButton, ButtonGroup, Separator, TabButton } from './EditorUI';
 
@@ -48,6 +49,18 @@ export function AdvancedToolbar({
 
   selectedObject,
   onUpdateSelected,
+
+  // New props for wireframe, split vectors, outline verification, and size lock
+  wireframeMode,
+  setWireframeMode,
+  onSplitVector,
+  canSplitVector,
+  onVerifyOutlines,
+  outlineStatus,
+  onGenerateCenterOutline,
+  sizesLocked,
+  onLockAllSizes,
+  onUnlockAllSizes,
 }) {
   const [activeTab, setActiveTab] = useState('transform');
 
@@ -88,6 +101,20 @@ export function AdvancedToolbar({
           testId="toolbar-tab-text"
         >
           Text
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'vectors'} 
+          onClick={() => setActiveTab('vectors')}
+          testId="toolbar-tab-vectors"
+        >
+          Vectors
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'outlines'} 
+          onClick={() => setActiveTab('outlines')}
+          testId="toolbar-tab-outlines"
+        >
+          Outlines
         </TabButton>
 
         {selectedCount > 0 && (
@@ -356,6 +383,18 @@ export function AdvancedToolbar({
             <span className="text-[10px] font-mono text-zinc-400 w-10 text-right">{zoom}%</span>
             </div>
           </div>
+
+            <Separator vertical />
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Wireframe</span>
+              <IconButton 
+                icon={Box} 
+                title="Toggle Wireframe Mode" 
+                onClick={() => setWireframeMode?.(!wireframeMode)}
+                active={wireframeMode}
+                testId="toggle-wireframe"
+              />
+            </div>
           </div>
         )}
 
@@ -459,6 +498,121 @@ export function AdvancedToolbar({
             {(!selectedObject || selectedObject?.type !== 'text') && (
               <span className="text-[10px] font-mono text-zinc-500 ml-4">
                 Select a text object to edit
+              </span>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'vectors' && (
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Split</span>
+              <IconButton 
+                icon={Split} 
+                title="Split Vector into Subpaths" 
+                onClick={onSplitVector}
+                disabled={!canSplitVector}
+                testId="split-vector"
+              />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">View</span>
+              <IconButton 
+                icon={Box} 
+                title="Toggle Wireframe Mode" 
+                onClick={() => setWireframeMode?.(!wireframeMode)}
+                active={wireframeMode}
+                testId="toggle-wireframe-vectors"
+              />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Size Lock</span>
+              <ButtonGroup>
+                <IconButton 
+                  icon={LockKeyhole} 
+                  title="Lock All Sizes" 
+                  onClick={onLockAllSizes}
+                  active={sizesLocked}
+                  testId="lock-all-sizes"
+                />
+                <IconButton 
+                  icon={UnlockKeyhole} 
+                  title="Unlock All Sizes" 
+                  onClick={onUnlockAllSizes}
+                  disabled={!sizesLocked}
+                  testId="unlock-all-sizes"
+                />
+              </ButtonGroup>
+            </div>
+
+            {sizesLocked && (
+              <span className="text-[10px] font-mono text-amber-500 ml-4">
+                All sizes are locked
+              </span>
+            )}
+
+            {!hasSelection && (
+              <span className="text-[10px] font-mono text-zinc-500 ml-4">
+                Select a vector path to split
+              </span>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'outlines' && (
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Verify</span>
+              <IconButton 
+                icon={CheckCircle} 
+                title="Verify Outlines" 
+                onClick={onVerifyOutlines}
+                disabled={!hasSelection}
+                testId="verify-outlines"
+              />
+            </div>
+
+            <Separator vertical />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Center</span>
+              <IconButton 
+                icon={Circle} 
+                title="Generate Center Outline" 
+                onClick={onGenerateCenterOutline}
+                disabled={!hasSelection}
+                testId="generate-center-outline"
+              />
+            </div>
+
+            {outlineStatus && (
+              <>
+                <Separator vertical />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">Status</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-mono ${outlineStatus.isClosed ? 'text-green-500' : 'text-red-500'}`}>
+                      {outlineStatus.isClosed ? 'Closed' : 'Open'}
+                    </span>
+                    {outlineStatus.center && (
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        Center: ({outlineStatus.center.x.toFixed(1)}, {outlineStatus.center.y.toFixed(1)})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {!hasSelection && (
+              <span className="text-[10px] font-mono text-zinc-500 ml-4">
+                Select an outline to verify
               </span>
             )}
           </div>

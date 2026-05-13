@@ -1,5 +1,5 @@
 import { getBBox } from './bbox';
-import { scaleSvgPath, translateSvgPath } from './path-operations';
+import { scaleSvgPath, translateSvgPath, mirrorSvgPathHorizontal, mirrorSvgPathVertical } from './path-operations';
 
 export function applyBBoxTransform(o, oldBox, newBox) {
   const sx = newBox.w / Math.max(0.001, oldBox.w);
@@ -177,6 +177,76 @@ export function flipObject(o, direction, centerX, centerY) {
     const newCenterY = centerY + (centerY - objCenterY);
     const dy = newCenterY - objCenterY;
     return translate(o, 0, dy);
+  }
+}
+
+// True geometry mirroring - actually flips the shape, not just repositions
+export function mirrorObjectGeometry(o, direction, centerX, centerY) {
+  const bbox = getBBox(o);
+  const objCenterX = bbox.x + bbox.w / 2;
+  const objCenterY = bbox.y + bbox.h / 2;
+
+  switch (o.type) {
+    case 'svgpath':
+      if (!o.d) return o;
+      if (direction === 'horizontal') {
+        return { ...o, d: mirrorSvgPathHorizontal(o.d, objCenterX) };
+      } else {
+        return { ...o, d: mirrorSvgPathVertical(o.d, objCenterY) };
+      }
+
+    case 'polygon':
+    case 'path':
+      if (!o.points || o.points.length === 0) return o;
+      if (direction === 'horizontal') {
+        return {
+          ...o,
+          points: o.points.map(([x, y]) => [objCenterX + (objCenterX - x), y]),
+        };
+      } else {
+        return {
+          ...o,
+          points: o.points.map(([x, y]) => [x, objCenterY + (objCenterY - y)]),
+        };
+      }
+
+    case 'line':
+      if (direction === 'horizontal') {
+        return {
+          ...o,
+          x1: objCenterX + (objCenterX - o.x1),
+          x2: objCenterX + (objCenterX - o.x2),
+        };
+      } else {
+        return {
+          ...o,
+          y1: objCenterY + (objCenterY - o.y1),
+          y2: objCenterY + (objCenterY - o.y2),
+        };
+      }
+
+    case 'text':
+      // For text, we add a transform to flip it
+      const currentTransform = o.transform || '';
+      if (direction === 'horizontal') {
+        return {
+          ...o,
+          transform: `${currentTransform} translate(${2 * o.x}, 0) scale(-1, 1)`.trim(),
+        };
+      } else {
+        return {
+          ...o,
+          transform: `${currentTransform} translate(0, ${2 * o.y}) scale(1, -1)`.trim(),
+        };
+      }
+
+    // For rect, ellipse, circle, image - these are symmetric, so just reposition
+    case 'rect':
+    case 'image':
+    case 'ellipse':
+    case 'circle':
+    default:
+      return flipObject(o, direction, centerX, centerY);
   }
 }
 

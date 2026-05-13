@@ -20,8 +20,8 @@ import {
 } from '@/components/editor/EditorUI';
 import { ScaleControl } from '@/components/editor/ScaleControl';
 import { AdvancedToolbar } from '@/components/editor/AdvancedToolbar';
-import { scaleObjectFromCenter } from '@/lib/editor/transforms';
-import { parsePath, serializePath } from '@/lib/editor/path-operations';
+import { scaleObjectFromCenter, mirrorObjectGeometry } from '@/lib/editor/transforms';
+import { parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter, generateInsetPath, generateInsetRect } from '@/lib/editor/path-operations';
 
 const EllipseIcon = (props) => (
   <svg
@@ -84,6 +84,9 @@ export default function Editor() {
   const [zoom, setZoom] = useState(100);
   const [clipboard, setClipboard] = useState(null);
   const [history, setHistory] = useState({ past: [], future: [] });
+  const [wireframeMode, setWireframeMode] = useState(false);
+  const [sizesLocked, setSizesLocked] = useState(false);
+  const [outlineStatus, setOutlineStatus] = useState(null);
   const objectsRef = useRef(objects);
   
   useEffect(() => {
@@ -334,19 +337,10 @@ export default function Editor() {
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
+    // Use true geometry mirroring
     setObjects(prev => prev.map(o => {
       if (!ids.includes(o.id)) return o;
-      const bbox = getBBox(o);
-      const objCenterX = bbox.x + bbox.w / 2;
-      const objCenterY = bbox.y + bbox.h / 2;
-
-      if (direction === 'horizontal') {
-        const newCenterX = centerX + (centerX - objCenterX);
-        return translateObject(o, newCenterX - objCenterX, 0);
-      } else {
-        const newCenterY = centerY + (centerY - objCenterY);
-        return translateObject(o, 0, newCenterY - objCenterY);
-      }
+      return mirrorObjectGeometry(o, direction, centerX, centerY);
     }));
   }
 
@@ -532,6 +526,175 @@ export default function Editor() {
     pushHistory();
     const scaled = objects.map(o => scaleObjectFromCenter(o, scale, centerX, centerY));
     setObjects(scaled);
+  }
+
+  // Split selected vector into subpaths
+  function splitSelectedVector() {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) {
+      toast.error('Select an SVG path to split');
+      return;
+    }
+
+    const subpaths = splitPathIntoSubpaths(selected.d);
+    if (subpaths.length <= 1) {
+      toast.info('This path has only one subpath');
+      return;
+    }
+
+    pushHistory();
+    
+    // Create new objects for each subpath
+    const newObjects = subpaths.map((subpathD, index) => ({
+      ...selected,
+      id: newId(),
+      name: `${selected.name || 'Path'} - Part ${index + 1}`,
+      d: subpathD,
+    }));
+
+    // Remove the original and add the new subpaths
+    setObjects(prev => [
+      ...prev.filter(o => o.id !== selected.id),
+      ...newObjects,
+    ]);
+
+    setSelectedId(null);
+    setSelectedLayerIds(new Set(newObjects.map(o => o.id)));
+    toast.success(`Split into ${subpaths.length} subpaths`);
+  }
+
+  // Check if selected object can be split
+  const canSplitVector = useMemo(() => {
+    if (!selected || selected.type !== 'svgpath' || !selected.d) return false;
+    const subpaths = splitPathIntoSubpaths(selected.d);
+    return subpaths.length > 1;
+  }, [selected]);
+
+  // Verify outlines
+  function verifyOutlines() {
+    if (!selected) {
+      toast.error('Select an object to verify');
+      return;
+    }
+
+    let status = { hasPath: false, isClosed: false, center: null };
+
+    if (selected.type === 'svgpath' && selected.d) {
+      const pathStatus = verifyPathClosed(selected.d);
+      const center = getPathCenter(selected.d);
+      status = { ...pathStatus, center };
+    } else if (selected.type === 'rect') {
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: selected.x + selected.width / 2, y: selected.y + selected.height / 2 },
+      };
+    } else if (selected.type === 'ellipse') {
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: selected.cx, y: selected.cy },
+      };
+    } else if (selected.type === 'polygon' && selected.points) {
+      const pts = selected.points;
+      const centerX = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+      const centerY = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      status = {
+        hasPath: true,
+        isClosed: true,
+        center: { x: centerX, y: centerY },
+      };
+    }
+
+    setOutlineStatus(status);
+
+    if (status.isClosed) {
+      toast.success('Outline is closed and valid');
+    } else if (status.hasPath) {
+      toast.warning('Outline is open (not closed with Z command)');
+    } else {
+      toast.error('No valid path found');
+    }
+  }
+
+  // Generate center outline for glass cutting
+  function generateCenterOutline() {
+    if (!selected) {
+      toast.error('Select an object to generate center outline');
+      return;
+    }
+
+    const insetAmount = 5 * PX_PER_MM; // 5mm inset for center outline
+
+    pushHistory();
+
+    let centerObject = null;
+
+    if (selected.type === 'rect') {
+      const inset = generateInsetRect(selected.x, selected.y, selected.width, selected.height, insetAmount);
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Rect'} - Center`,
+        x: inset.x,
+        y: inset.y,
+        width: inset.width,
+        height: inset.height,
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else if (selected.type === 'svgpath' && selected.d) {
+      const insetD = generateInsetPath(selected.d, insetAmount);
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Path'} - Center`,
+        d: insetD,
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else if (selected.type === 'ellipse') {
+      centerObject = {
+        ...selected,
+        id: newId(),
+        name: `${selected.name || 'Ellipse'} - Center`,
+        rx: Math.max(1, selected.rx - insetAmount),
+        ry: Math.max(1, selected.ry - insetAmount),
+        fill: 'none',
+        stroke: '#EF4444',
+        strokeWidth: 2,
+        strokeDasharray: '4 2',
+        isCenterOutline: true,
+      };
+    } else {
+      toast.error('Center outline not supported for this shape type');
+      return;
+    }
+
+    setObjects(prev => [...prev, centerObject]);
+    setSelectedId(centerObject.id);
+    toast.success('Center outline generated');
+  }
+
+  // Lock all sizes
+  function lockAllSizes() {
+    pushHistory();
+    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: true })));
+    setSizesLocked(true);
+    toast.success('All sizes locked');
+  }
+
+  // Unlock all sizes
+  function unlockAllSizes() {
+    pushHistory();
+    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: false })));
+    setSizesLocked(false);
+    toast.success('All sizes unlocked');
   }
 
   function onUploadImage(e) {
@@ -763,6 +926,16 @@ export default function Editor() {
         setZoom={setZoom}
         selectedObject={selected}
         onUpdateSelected={updateSelected}
+        wireframeMode={wireframeMode}
+        setWireframeMode={setWireframeMode}
+        onSplitVector={splitSelectedVector}
+        canSplitVector={canSplitVector}
+        onVerifyOutlines={verifyOutlines}
+        outlineStatus={outlineStatus}
+        onGenerateCenterOutline={generateCenterOutline}
+        sizesLocked={sizesLocked}
+        onLockAllSizes={lockAllSizes}
+        onUnlockAllSizes={unlockAllSizes}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -827,6 +1000,7 @@ export default function Editor() {
               showGrid={showGrid}
               snapToGrid={snapToGrid}
               gridSize={gridSize}
+              wireframeMode={wireframeMode}
             />
           </div>
         </div>

@@ -13,6 +13,7 @@ export default function CanvasSVG({
   bgImageUrl, bgOpacity,
   onPointerCoords,
   glassSize = 'small',
+  wireframeMode = false,
 }) {
   const svgRef = useRef(null);
   const drawingRef = useRef(null);
@@ -62,7 +63,8 @@ export default function CanvasSVG({
 
     if (e.target.dataset.handle && selectedId) {
       const sel = objects.find((o) => o.id === selectedId);
-      if (sel && !sel.locked) {
+      // Prevent resize if size is locked
+      if (sel && !sel.locked && !sel.sizeLocked) {
         handleRef.current = { handle: e.target.dataset.handle, oldBox: getBBox(sel), origObj: sel };
       }
       return;
@@ -355,16 +357,17 @@ export default function CanvasSVG({
       })()}
 
       {objects.filter((o) => o.visible !== false).map((o) => (
-        <ShapeNode key={o.id} o={o} onSelect={() => tool === 'select' && setSelectedId(o.id)} />
+        <ShapeNode key={o.id} o={o} onSelect={() => tool === 'select' && setSelectedId(o.id)} wireframeMode={wireframeMode} />
       ))}
       {selected && selectedBox && (
         <g key="selection-overlay">
           <rect
             key="selection-bbox"
             x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h}
-            fill="none" stroke="#F59E0B" strokeWidth="1" strokeDasharray="4 4" pointerEvents="none"
+            fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1" strokeDasharray="4 4" pointerEvents="none"
           />
-          {!selected.locked && HANDLE_KEYS.map((h) => {
+          {/* Show resize handles only if not locked and not sizeLocked */}
+          {!selected.locked && !selected.sizeLocked && HANDLE_KEYS.map((h) => {
             const pos = handlePos(h, selectedBox);
             return (
               <rect
@@ -377,6 +380,13 @@ export default function CanvasSVG({
               />
             );
           })}
+          {/* Show lock indicator when sizeLocked */}
+          {selected.sizeLocked && (
+            <g transform={`translate(${selectedBox.x + selectedBox.w / 2}, ${selectedBox.y - 15})`}>
+              <rect x="-20" y="-8" width="40" height="16" fill="#EF4444" rx="2" />
+              <text x="0" y="4" textAnchor="middle" fill="white" fontSize="9" fontFamily="monospace">LOCKED</text>
+            </g>
+          )}
         </g>
       )}
       </svg>
@@ -384,19 +394,29 @@ export default function CanvasSVG({
   );
 }
 
-function ShapeNode({ o }) {
+function ShapeNode({ o, wireframeMode = false }) {
+  // Wireframe mode: transparent fill, thin blue stroke
+  const wireframeFill = 'none';
+  const wireframeStroke = '#3B82F6';
+  const wireframeStrokeWidth = 1;
+
+  const getFill = () => wireframeMode ? wireframeFill : (o.fill || 'none');
+  const getStroke = () => wireframeMode ? wireframeStroke : (o.stroke || 'none');
+  const getStrokeWidth = () => wireframeMode ? wireframeStrokeWidth : (o.strokeWidth || 0);
+  const getOpacity = () => wireframeMode ? 1 : (o.opacity ?? 1);
+
   switch (o.type) {
     case 'rect':
-      return <rect x={o.x} y={o.y} width={o.width} height={o.height} fill={o.fill || 'none'} stroke={o.stroke || 'none'} strokeWidth={o.strokeWidth || 0} opacity={o.opacity ?? 1} />;
+      return <rect x={o.x} y={o.y} width={o.width} height={o.height} fill={getFill()} stroke={getStroke()} strokeWidth={getStrokeWidth()} opacity={getOpacity()} />;
     case 'ellipse':
-      return <ellipse cx={o.cx} cy={o.cy} rx={o.rx} ry={o.ry} fill={o.fill || 'none'} stroke={o.stroke || 'none'} strokeWidth={o.strokeWidth || 0} opacity={o.opacity ?? 1} />;
+      return <ellipse cx={o.cx} cy={o.cy} rx={o.rx} ry={o.ry} fill={getFill()} stroke={getStroke()} strokeWidth={getStrokeWidth()} opacity={getOpacity()} />;
     case 'line':
-      return <line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke={o.stroke || '#000'} strokeWidth={o.strokeWidth || 1} opacity={o.opacity ?? 1} />;
+      return <line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke={wireframeMode ? wireframeStroke : (o.stroke || '#000')} strokeWidth={wireframeMode ? wireframeStrokeWidth : (o.strokeWidth || 1)} opacity={getOpacity()} />;
     case 'polygon':
-      return <polygon points={(o.points || []).map(([x, y]) => `${x},${y}`).join(' ')} fill={o.fill || 'none'} stroke={o.stroke || 'none'} strokeWidth={o.strokeWidth || 0} opacity={o.opacity ?? 1} />;
+      return <polygon points={(o.points || []).map(([x, y]) => `${x},${y}`).join(' ')} fill={getFill()} stroke={getStroke()} strokeWidth={getStrokeWidth()} opacity={getOpacity()} />;
     case 'path': {
       const d = o.d || (o.points || []).map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ');
-      return <path d={d} fill={o.fill || 'none'} stroke={o.stroke || '#000'} strokeWidth={o.strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round" opacity={o.opacity ?? 1} key={d} />;
+      return <path d={d} fill={getFill()} stroke={wireframeMode ? wireframeStroke : (o.stroke || '#000')} strokeWidth={wireframeMode ? wireframeStrokeWidth : (o.strokeWidth || 2)} strokeLinecap="round" strokeLinejoin="round" opacity={getOpacity()} key={d} />;
     }
     case 'text':
       return (
@@ -409,20 +429,26 @@ function ShapeNode({ o }) {
           fontStyle={o.fontStyle || 'normal'}
           textDecoration={o.textDecoration || 'none'}
           textAnchor={o.textAnchor || 'start'}
-          fill={o.fill || '#000'} 
-          opacity={o.opacity ?? 1}
+          fill={wireframeMode ? wireframeStroke : (o.fill || '#000')}
+          stroke={wireframeMode ? wireframeStroke : 'none'}
+          strokeWidth={wireframeMode ? 0.5 : 0}
+          opacity={getOpacity()}
         >
           {o.text}
         </text>
       );
     case 'image':
+      if (wireframeMode) {
+        // In wireframe mode, show a rectangle placeholder for images
+        return <rect x={o.x} y={o.y} width={o.width} height={o.height} fill="none" stroke={wireframeStroke} strokeWidth={wireframeStrokeWidth} strokeDasharray="4 2" opacity={0.5} />;
+      }
       return <image x={o.x} y={o.y} width={o.width} height={o.height} href={o.href} opacity={o.opacity ?? 1} />;
     case 'rectset': {
       const d = (o.cells || []).map(([x, y, w, h]) => `M${x},${y} h${w} v${h} h${-w} z`).join(' ');
-      return <path d={d} fill={o.fill || '#000'} opacity={o.opacity ?? 1} />;
+      return <path d={d} fill={getFill()} stroke={getStroke()} strokeWidth={getStrokeWidth()} opacity={getOpacity()} />;
     }
     case 'svgpath':
-      return <path key={o.d} d={o.d || ''} fill={o.fill || 'none'} stroke={o.stroke || 'none'} strokeWidth={o.strokeWidth || 0} fillRule={o.fillRule || 'nonzero'} opacity={o.opacity ?? 1} />;
+      return <path key={o.d} d={o.d || ''} fill={getFill()} stroke={getStroke()} strokeWidth={getStrokeWidth()} fillRule={o.fillRule || 'nonzero'} opacity={getOpacity()} />;
     default:
       return null;
   }
