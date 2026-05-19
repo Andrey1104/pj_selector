@@ -51,15 +51,27 @@ export function buildSvg(objects, width, height) {
 export function buildSvgsByColor(objects, width, height) {
   const visible = objects.filter((o) => o.visible !== false && o.type !== 'image');
   const groups = new Map();
+
   for (const o of visible) {
-    let c = null;
-    if (o.fill && o.fill !== 'none') c = o.fill;
-    else if (o.stroke && o.stroke !== 'none') c = o.stroke;
-    if (!c) c = '__no_color__';
-    if (!c) continue;
-    if (!groups.has(c)) groups.set(c, []);
-    groups.get(c).push(o);
+    const hasFill = o.fill && o.fill !== 'none';
+    const hasStroke = o.stroke && o.stroke !== 'none';
+
+    if (hasFill) {
+      if (!groups.has(o.fill)) groups.set(o.fill, []);
+      groups.get(o.fill).push({ ...o, stroke: 'none', strokeWidth: 0 });
+    }
+
+    if (hasStroke) {
+      if (!groups.has(o.stroke)) groups.set(o.stroke, []);
+      groups.get(o.stroke).push({ ...o, fill: 'none' });
+    }
+
+    if (!hasFill && !hasStroke) {
+      if (!groups.has('__no_color__')) groups.set('__no_color__', []);
+      groups.get('__no_color__').push(o);
+    }
   }
+
   const out = [];
   for (const [c, list] of groups.entries()) {
     const body = list.map(shapeToSvgElement).join('\n  ');
