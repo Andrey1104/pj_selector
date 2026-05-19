@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import {getBBox, hitTest, translate, applyBBoxTransform} from '@/lib/editor-utils';
+import {getBBox, hitTest, translate, applyBBoxTransform, PX_PER_MM} from '@/lib/editor-utils';
 
 
 const GLASS_SIZES = {
@@ -430,6 +430,15 @@ export default function CanvasSVG({
   const pxPerMm = width / canvasMm;
   const glassSizeConfig = GLASS_SIZES[glassSize] || GLASS_SIZES.small;
 
+  if (selected && selectedBox) {
+    console.log('selectedBox', selectedBox)
+    console.log('selected', selected)
+    console.log('width', width)
+    console.log('canvasMm', canvasMm)
+    console.log('canvas', selectedBox.w / (width / canvasMm))
+  }
+
+
   return (
     <div className="relative w-full h-full" style={{paddingLeft: '28px', paddingBottom: '28px'}}>
       <div className="absolute left-0 top-0 w-7 pointer-events-none" style={{bottom: '28px'}}>
@@ -539,23 +548,55 @@ export default function CanvasSVG({
         ))}
         {selected && selectedBox && (
           <g key="selection-overlay">
-            <rect
-              key="selection-bbox"
-              x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h}
-              fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1" strokeDasharray="4 4"
-              pointerEvents="none"
-            />
+            <rect key="selection-bbox" x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h}
+                  fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1" strokeDasharray="4 4"
+                  pointerEvents="none"/>
+            <g>
+              <rect
+                x={selectedBox.x}
+                y={Math.max(selectedBox.y - 20, 0)}
+                width={selectedBox.w}
+                height="16"
+                fill="rgba(0, 0, 0, 0)"
+                pointerEvents="none"/>
+              <text
+                x={selectedBox.x + selectedBox.w / 2}
+                y={Math.max(selectedBox.y - 15, 15)}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#F59E0B"
+                fontSize="10"
+                fontWeight="bold"
+                pointerEvents="none">
+                <tspan fill="#F59E0B">{(selectedBox.w / (width / canvasMm)).toFixed(1)}</tspan> mm
+              </text>
+            </g>
+            <g>
+              <rect
+                x={selectedBox.x + selectedBox.w + 5}
+                y={selectedBox.y + selectedBox.h / 2 - 16}
+                width="50"
+                height="30"
+                fill="rgba(0, 0, 0, 0)"
+                pointerEvents="none"/>
+              <text
+                x={selectedBox.x + selectedBox.w + 40}
+                y={selectedBox.y + selectedBox.h / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#F59E0B"
+                fontSize="10"
+                fontWeight="bold"
+                pointerEvents="none">
+                <tspan fill="#F59E0B">{(selectedBox.h / (width / canvasMm)).toFixed(1)}</tspan> mm
+              </text>
+            </g>
+
             {!selected.locked && !selected.sizeLocked && HANDLE_KEYS.map((h) => {
               const pos = handlePos(h, selectedBox);
               return (
-                <rect
-                  key={h}
-                  data-handle={h}
-                  data-testid={`handle-${h}`}
-                  x={pos.x - 5} y={pos.y - 5} width="10" height="10"
-                  fill="#F59E0B" stroke="#000" strokeWidth="1"
-                  style={{cursor: handleCursor(h)}}
-                />
+                <rect key={h} data-handle={h} data-testid={`handle-${h}`} x={pos.x - 5} y={pos.y - 5} width="10"
+                      height="10" fill="#F59E0B" stroke="#000" strokeWidth="1" style={{cursor: handleCursor(h)}}/>
               );
             })}
 

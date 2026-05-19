@@ -1650,12 +1650,6 @@ export default function Editor() {
             <div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
               {actualCanvasMm} x {actualCanvasMm} mm
             </div>
-            {largestLayerInfo && (
-              <div className="absolute -top-6 right-0 font-mono text-sm font-bold text-amber-500"
-                   data-testid="largest-layer-size">
-                Max: {largestLayerInfo.sizeMm.toFixed(1)} mm
-              </div>
-            )}
             <CanvasSVG
               width={CANVAS_W} height={CANVAS_H}
               canvasMm={actualCanvasMm}
@@ -1675,6 +1669,7 @@ export default function Editor() {
               snapToCenter={snapToCenter}
               snapToCircles={snapToCircles}
               snapThreshold={snapThreshold}
+              largestLayerInfo={largestLayerInfo}
             />
           </div>
         </div>
