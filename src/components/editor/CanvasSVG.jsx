@@ -314,7 +314,6 @@ export default function CanvasSVG({
       }
       return;
     }
-
     if (drawingRef.current) {
       const d = drawingRef.current;
       if (d.type === 'path') {
