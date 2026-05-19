@@ -12,7 +12,7 @@ export const CANVAS_SIZE_PRESETS = [
   { id: 'xlarge', labelKey: 'canvasSizeXLarge', mm: 300, description: '300mm' },
   { id: 'custom', labelKey: 'canvasSizeCustom', mm: null, description: 'Custom' },
 ];
-export const DEFAULT_COLORS = ['#EF4444', '#F59E0B', '#FACC15', '#10B981', '#3B82F6', '#8B5CF6', '#FFFFFF', '#000000'];
+export const DEFAULT_COLORS = ['#EF4444', '#ff8614', '#f5d742', '#07ed0b', '#165bca', '#FFFFFF', '#000000'];
 export const TOOLS = [
   { id: 'select', label: 'Select (V)', key: 'v', testId: 'tool-select' },
   { id: 'brush', label: 'Brush (B)', key: 'b', testId: 'tool-brush' },

@@ -1,35 +1,35 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
-import { toast } from 'sonner';
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import {useParams, useNavigate} from 'react-router-dom';
+import {jsPDF} from 'jspdf';
+import {toast} from 'sonner';
 import {
   MousePointer2, Pencil, Square, Circle, Minus, Hexagon, Type,
   Image as ImageIcon, Trash2, Save, Download, FileImage,
   RotateCcw, Eye, EyeOff, Lock, Unlock, ArrowUp, ArrowDown,
   Wand2, Octagon, Triangle, RectangleHorizontal, GripVertical
 } from 'lucide-react';
-import { designsApi } from '@/lib/api';
+import {designsApi} from '@/lib/api';
 import {
-  buildSvg, buildSvgsByColor, downloadText, traceBitmap, parseSvgString, 
+  buildSvg, buildSvgsByColor, downloadText, traceBitmap, parseSvgString,
   getBBox, newId, traceBitmapAdvanced, centerObjectsOnCanvas,
   CANVAS_MM, CANVAS_W, CANVAS_H, PX_PER_MM, DEFAULT_COLORS, TOOLS, CANVAS_SIZE_PRESETS,
 } from '@/lib/editor-utils';
 import CanvasSVG from '@/components/editor/CanvasSVG';
-import { 
-  ToolButton, ToolbarButton, Panel, ColorRow, SliderRow, SmallBtn, IconButton 
+import {
+  ToolButton, ToolbarButton, Panel, ColorRow, SliderRow, SmallBtn, IconButton
 } from '@/components/editor/EditorUI';
-import { ScaleControl } from '@/components/editor/ScaleControl';
-import { AdvancedToolbar } from '@/components/editor/AdvancedToolbar';
-import { scaleObjectFromCenter, mirrorObjectGeometry } from '@/lib/editor/transforms';
-import { 
-  parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter, 
-  generateInsetPath, generateInsetRect, applyCornerRounding, mergeVectorsPreserveOuter, 
-  splitByCircleBoundary 
+import {ScaleControl} from '@/components/editor/ScaleControl';
+import {AdvancedToolbar} from '@/components/editor/AdvancedToolbar';
+import {scaleObjectFromCenter, mirrorObjectGeometry} from '@/lib/editor/transforms';
+import {
+  parsePath, serializePath, splitPathIntoSubpaths, verifyPathClosed, getPathCenter,
+  generateInsetPath, generateInsetRect, applyCornerRounding, mergeVectorsPreserveOuter,
+  splitByCircleBoundary
 } from '@/lib/editor/path-operations';
-import { calculateSnapPoints, findSnapTarget, snapToCenter as snapToCenterUtil } from '@/lib/editor/snap-utils';
-import { useTranslation } from '@/lib/i18n';
-import { LanguageSelector } from '@/components/editor/LanguageSelector';
-import { Ruler } from 'lucide-react';
+import {calculateSnapPoints, findSnapTarget, snapToCenter as snapToCenterUtil} from '@/lib/editor/snap-utils';
+import {useTranslation} from '@/lib/i18n';
+import {LanguageSelector} from '@/components/editor/LanguageSelector';
+import {Ruler} from 'lucide-react';
 
 const EllipseIcon = (props) => (
   <svg
@@ -41,7 +41,7 @@ const EllipseIcon = (props) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <ellipse cx="12" cy="12" rx="10" ry="7" />
+    <ellipse cx="12" cy="12" rx="10" ry="7"/>
   </svg>
 );
 
@@ -64,7 +64,7 @@ function slug(str) {
 }
 
 export default function Editor() {
-  const { designId } = useParams();
+  const {designId} = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [tool, setTool] = useState('select');
@@ -80,7 +80,7 @@ export default function Editor() {
   const [name, setName] = useState('Untitled design');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
-  const [pointer, setPointer] = useState({ x: 0, y: 0 });
+  const [pointer, setPointer] = useState({x: 0, y: 0});
   const [imageMode, setImageMode] = useState(null);
   const [glassSize, setGlassSize] = useState('small');
   const [canvasSizePreset, setCanvasSizePreset] = useState('medium');
@@ -93,7 +93,7 @@ export default function Editor() {
   const [gridSize, setGridSize] = useState(10);
   const [zoom, setZoom] = useState(100);
   const [clipboard, setClipboard] = useState(null);
-  const [history, setHistory] = useState({ past: [], future: [] });
+  const [history, setHistory] = useState({past: [], future: []});
   const [wireframeMode, setWireframeMode] = useState(false);
   const [sizesLocked, setSizesLocked] = useState(false);
   const [outlineStatus, setOutlineStatus] = useState(null);
@@ -105,7 +105,7 @@ export default function Editor() {
   const [dimensionColor, setDimensionColor] = useState('#EF4444');
   const [marqueeStart, setMarqueeStart] = useState(null);
   const [marqueeEnd, setMarqueeEnd] = useState(null);
-  
+
   // Snap state
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [snapToCenter, setSnapToCenter] = useState(true);
@@ -113,14 +113,14 @@ export default function Editor() {
   const [showSnapGuides, setShowSnapGuides] = useState(true);
   const [snapThreshold, setSnapThreshold] = useState(5);
   const [snapGuides, setSnapGuides] = useState([]);
-  
+
   // Corner radius state
   const [cornerRadius, setCornerRadius] = useState(0);
-  
+
   const objectsRef = useRef(objects);
-  
-  const { t } = useTranslation();
-  
+
+  const {t} = useTranslation();
+
   useEffect(() => {
     objectsRef.current = objects;
   }, [objects]);
@@ -138,7 +138,7 @@ export default function Editor() {
       const prev = h.past[h.past.length - 1];
       const future = [JSON.stringify(objectsRef.current), ...h.future];
       setObjects(JSON.parse(prev));
-      return { past: h.past.slice(0, -1), future };
+      return {past: h.past.slice(0, -1), future};
     });
   }, []);
 
@@ -148,7 +148,7 @@ export default function Editor() {
       const next = h.future[0];
       const past = [...h.past, JSON.stringify(objectsRef.current)];
       setObjects(JSON.parse(next));
-      return { past, future: h.future.slice(1) };
+      return {past, future: h.future.slice(1)};
     });
   }, []);
 
@@ -167,36 +167,36 @@ export default function Editor() {
     const onKey = (e) => {
       const tag = (e.target.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
-      
+
       const t = TOOLS.find((x) => x.key === e.key.toLowerCase());
       if (t) {
         setTool(t.id);
         return;
       }
-      
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedId) deleteSelected();
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
         e.preventDefault();
         redo();
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
         e.preventDefault();
         copySelected();
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
         e.preventDefault();
         pasteClipboard();
@@ -207,40 +207,40 @@ export default function Editor() {
         centerOnCanvas();
         return;
       }
-      
+
       if (e.key === 'Escape') {
         setSelectedId(null);
         setSelectedLayerIds(new Set());
       }
-      
+
       // Text formatting shortcuts (Ctrl+B, Ctrl+I, Ctrl+U)
       if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
         e.preventDefault();
         if (selected?.type === 'text') {
           const isBold = selected.fontWeight === 'bold';
-          updateSelected({ fontWeight: isBold ? 'normal' : 'bold' });
+          updateSelected({fontWeight: isBold ? 'normal' : 'bold'});
         }
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
         e.preventDefault();
         if (selected?.type === 'text') {
           const isItalic = selected.fontStyle === 'italic';
-          updateSelected({ fontStyle: isItalic ? 'normal' : 'italic' });
+          updateSelected({fontStyle: isItalic ? 'normal' : 'italic'});
         }
         return;
       }
-      
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
         e.preventDefault();
         if (selected?.type === 'text') {
           const isUnderline = selected.textDecoration === 'underline';
-          updateSelected({ textDecoration: isUnderline ? 'none' : 'underline' });
+          updateSelected({textDecoration: isUnderline ? 'none' : 'underline'});
         }
         return;
       }
-      
+
       // Select all with Ctrl+A
       if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
         e.preventDefault();
@@ -262,13 +262,13 @@ export default function Editor() {
       const area = bbox.w * bbox.h;
       if (area > maxArea) {
         maxArea = area;
-        largest = { obj: o, bbox };
+        largest = {obj: o, bbox};
       }
     }
     if (!largest) return null;
     const sizePx = Math.max(largest.bbox.w, largest.bbox.h);
     const sizeMm = sizePx / PX_PER_MM;
-    return { id: largest.obj.id, sizeMm, bbox: largest.bbox };
+    return {id: largest.obj.id, sizeMm, bbox: largest.bbox};
   }, [objects]);
 
   const getTargetIds = useCallback(() => {
@@ -279,22 +279,22 @@ export default function Editor() {
     switch (o.type) {
       case 'rect':
       case 'image':
-        return { ...o, x: o.x + dx, y: o.y + dy };
+        return {...o, x: o.x + dx, y: o.y + dy};
       case 'ellipse':
       case 'circle':
-        return { ...o, cx: o.cx + dx, cy: o.cy + dy };
+        return {...o, cx: o.cx + dx, cy: o.cy + dy};
       case 'line':
-        return { ...o, x1: o.x1 + dx, y1: o.y1 + dy, x2: o.x2 + dx, y2: o.y2 + dy };
+        return {...o, x1: o.x1 + dx, y1: o.y1 + dy, x2: o.x2 + dx, y2: o.y2 + dy};
       case 'polygon':
       case 'path':
-        return { ...o, points: (o.points || []).map(([x, y]) => [x + dx, y + dy]) };
+        return {...o, points: (o.points || []).map(([x, y]) => [x + dx, y + dy])};
       case 'text':
-        return { ...o, x: o.x + dx, y: o.y + dy };
+        return {...o, x: o.x + dx, y: o.y + dy};
       case 'svgpath':
         if (!o.d) return o;
         const parsed = parsePath(o.d);
         const translated = parsed.map(cmd => {
-          const newCmd = { ...cmd };
+          const newCmd = {...cmd};
           if (newCmd.x !== undefined) newCmd.x += dx;
           if (newCmd.y !== undefined) newCmd.y += dy;
           if (newCmd.x1 !== undefined) newCmd.x1 += dx;
@@ -303,14 +303,14 @@ export default function Editor() {
           if (newCmd.y2 !== undefined) newCmd.y2 += dy;
           return newCmd;
         });
-        return { ...o, d: serializePath(translated) };
+        return {...o, d: serializePath(translated)};
       default:
         return o;
     }
   }
 
   function updateSelected(patch) {
-    setObjects((prev) => prev.map((o) => (o.id === selectedId ? { ...o, ...patch } : o)));
+    setObjects((prev) => prev.map((o) => (o.id === selectedId ? {...o, ...patch} : o)));
   }
 
   function deleteSelected() {
@@ -374,12 +374,24 @@ export default function Editor() {
       let dx = 0, dy = 0;
 
       switch (alignment) {
-        case 'left': dx = minX - bbox.x; break;
-        case 'centerH': dx = (minX + maxX) / 2 - (bbox.x + bbox.w / 2); break;
-        case 'right': dx = maxX - (bbox.x + bbox.w); break;
-        case 'top': dy = minY - bbox.y; break;
-        case 'centerV': dy = (minY + maxY) / 2 - (bbox.y + bbox.h / 2); break;
-        case 'bottom': dy = maxY - (bbox.y + bbox.h); break;
+        case 'left':
+          dx = minX - bbox.x;
+          break;
+        case 'centerH':
+          dx = (minX + maxX) / 2 - (bbox.x + bbox.w / 2);
+          break;
+        case 'right':
+          dx = maxX - (bbox.x + bbox.w);
+          break;
+        case 'top':
+          dy = minY - bbox.y;
+          break;
+        case 'centerV':
+          dy = (minY + maxY) / 2 - (bbox.y + bbox.h / 2);
+          break;
+        case 'bottom':
+          dy = maxY - (bbox.y + bbox.h);
+          break;
       }
 
       return translateObject(o, dx, dy);
@@ -441,29 +453,29 @@ export default function Editor() {
 
     setObjects(prev => prev.map(o => {
       if (!ids.includes(o.id)) return o;
-      
+
       switch (o.type) {
         case 'rect':
         case 'image': {
           const [nx, ny] = rotatePoint(o.x + o.width / 2, o.y + o.height / 2);
-          return { ...o, x: nx - o.width / 2, y: ny - o.height / 2 };
+          return {...o, x: nx - o.width / 2, y: ny - o.height / 2};
         }
         case 'ellipse':
         case 'circle': {
           const [nx, ny] = rotatePoint(o.cx, o.cy);
-          return { ...o, cx: nx, cy: ny };
+          return {...o, cx: nx, cy: ny};
         }
         case 'line': {
           const [nx1, ny1] = rotatePoint(o.x1, o.y1);
           const [nx2, ny2] = rotatePoint(o.x2, o.y2);
-          return { ...o, x1: nx1, y1: ny1, x2: nx2, y2: ny2 };
+          return {...o, x1: nx1, y1: ny1, x2: nx2, y2: ny2};
         }
         case 'polygon':
         case 'path':
-          return { ...o, points: (o.points || []).map(([x, y]) => rotatePoint(x, y)) };
+          return {...o, points: (o.points || []).map(([x, y]) => rotatePoint(x, y))};
         case 'text': {
           const [nx, ny] = rotatePoint(o.x, o.y);
-          return { ...o, x: nx, y: ny };
+          return {...o, x: nx, y: ny};
         }
         default:
           return o;
@@ -488,7 +500,7 @@ export default function Editor() {
       maxX = Math.max(maxX, bbox.x + bbox.w);
       maxY = Math.max(maxY, bbox.y + bbox.h);
     }
-    
+
     const contentW = maxX - minX;
     const contentH = maxY - minY;
     const offsetX = (CANVAS_W - contentW) / 2 - minX;
@@ -498,7 +510,7 @@ export default function Editor() {
       if (!ids.includes(o.id)) return o;
       return translateObject(o, offsetX, offsetY);
     }));
-    
+
     toast.success(`Centered ${ids.length} layer(s)`);
   }
 
@@ -517,10 +529,10 @@ export default function Editor() {
     const newObjs = clipboard.map(o => ({
       ...o,
       id: newId(),
-      ...(o.x !== undefined ? { x: o.x + offset } : {}),
-      ...(o.y !== undefined ? { y: o.y + offset } : {}),
-      ...(o.cx !== undefined ? { cx: o.cx + offset } : {}),
-      ...(o.cy !== undefined ? { cy: o.cy + offset } : {}),
+      ...(o.x !== undefined ? {x: o.x + offset} : {}),
+      ...(o.y !== undefined ? {y: o.y + offset} : {}),
+      ...(o.cx !== undefined ? {cx: o.cx + offset} : {}),
+      ...(o.cy !== undefined ? {cy: o.cy + offset} : {}),
     }));
     setObjects(prev => [...prev, ...newObjs]);
     setSelectedLayerIds(new Set(newObjs.map(o => o.id)));
@@ -558,7 +570,7 @@ export default function Editor() {
     pushHistory();
     setObjects((prev) =>
       prev.map((o) =>
-        selectedLayerIds.has(o.id) ? { ...o, visible: !(o.visible !== false) } : o
+        selectedLayerIds.has(o.id) ? {...o, visible: !(o.visible !== false)} : o
       )
     );
   }
@@ -568,7 +580,7 @@ export default function Editor() {
     pushHistory();
     setObjects((prev) =>
       prev.map((o) =>
-        selectedLayerIds.has(o.id) ? { ...o, locked: !o.locked } : o
+        selectedLayerIds.has(o.id) ? {...o, locked: !o.locked} : o
       )
     );
   }
@@ -605,7 +617,7 @@ export default function Editor() {
 
   function handleLayerDrop(e, targetLayerId) {
     e.preventDefault();
-    
+
     if (!draggedLayerId || draggedLayerId === targetLayerId) {
       setDraggedLayerId(null);
       setDragOverLayerId(null);
@@ -613,24 +625,24 @@ export default function Editor() {
     }
 
     pushHistory();
-    
+
     setObjects((prev) => {
       const newObjects = [...prev];
       const draggedIndex = newObjects.findIndex(o => o.id === draggedLayerId);
       const targetIndex = newObjects.findIndex(o => o.id === targetLayerId);
-      
+
       if (draggedIndex === -1 || targetIndex === -1) return prev;
 
       // Remove the dragged item
       const [draggedItem] = newObjects.splice(draggedIndex, 1);
-      
+
       // Calculate new target index after removal
       const newTargetIndex = newObjects.findIndex(o => o.id === targetLayerId);
-      
+
       // Insert at the correct position
       // Since we display reversed, we need to insert after the target
       newObjects.splice(newTargetIndex, 0, draggedItem);
-      
+
       return newObjects;
     });
 
@@ -675,7 +687,7 @@ export default function Editor() {
     }
 
     pushHistory();
-    
+
     // Create new objects for each subpath
     const newObjects = subpaths.map((subpathD, index) => ({
       ...selected,
@@ -704,11 +716,11 @@ export default function Editor() {
 
 // Glass size configuration
   const glassConfig = useMemo(() => {
-  return glassSize === 'large'
-  ? { outer: 66, inner: 46 }
-  : { outer: 37, inner: 26 };
+    return glassSize === 'large'
+      ? {outer: 66, inner: 46}
+      : {outer: 37, inner: 26};
   }, [glassSize]);
-  
+
   // Canvas size configuration
   const actualCanvasMm = useMemo(() => {
     const preset = CANVAS_SIZE_PRESETS.find(p => p.id === canvasSizePreset);
@@ -804,7 +816,7 @@ export default function Editor() {
     const centerY = CANVAS_H / 2;
     const innerRadius = (glassConfig.inner / 2) * PX_PER_MM;
 
-    const { inner, outer } = splitByCircleBoundary(selected.d, centerX, centerY, innerRadius);
+    const {inner, outer} = splitByCircleBoundary(selected.d, centerX, centerY, innerRadius);
 
     if (inner.length === 0 && outer.length === 0) {
       toast.error('Could not split path by circle boundary');
@@ -857,7 +869,7 @@ export default function Editor() {
 
     pushHistory();
     const selectedObjs = objects.filter(o => ids.includes(o.id));
-    
+
     // Calculate bounding box of selection
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const o of selectedObjs) {
@@ -893,7 +905,7 @@ export default function Editor() {
 
     pushHistory();
     const selectedObjs = objects.filter(o => ids.includes(o.id));
-    
+
     // Calculate bounding box of selection
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const o of selectedObjs) {
@@ -910,12 +922,12 @@ export default function Editor() {
     const contentCenterY = (minY + maxY) / 2;
     const canvasCenterX = CANVAS_W / 2;
     const canvasCenterY = CANVAS_H / 2;
-    
+
     // Calculate angle from center to current position
     const dx = contentCenterX - canvasCenterX;
     const dy = contentCenterY - canvasCenterY;
     const angle = Math.atan2(dy, dx);
-    
+
     // Inner radius in pixels
     const innerRadiusPx = (glassConfig.inner / 2) * PX_PER_MM;
     const objRadius = Math.max(contentW, contentH) / 2;
@@ -951,7 +963,7 @@ export default function Editor() {
 
     pushHistory();
     const selectedObjs = objects.filter(o => ids.includes(o.id));
-    
+
     // Calculate bounding box of selection
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const o of selectedObjs) {
@@ -968,12 +980,12 @@ export default function Editor() {
     const contentCenterY = (minY + maxY) / 2;
     const canvasCenterX = CANVAS_W / 2;
     const canvasCenterY = CANVAS_H / 2;
-    
+
     // Calculate angle from center to current position
     const dx = contentCenterX - canvasCenterX;
     const dy = contentCenterY - canvasCenterY;
     const angle = Math.atan2(dy, dx);
-    
+
     // Outer radius in pixels
     const outerRadiusPx = (glassConfig.outer / 2) * PX_PER_MM;
     const objRadius = Math.max(contentW, contentH) / 2;
@@ -1005,23 +1017,23 @@ export default function Editor() {
       return;
     }
 
-    let status = { hasPath: false, isClosed: false, center: null };
+    let status = {hasPath: false, isClosed: false, center: null};
 
     if (selected.type === 'svgpath' && selected.d) {
       const pathStatus = verifyPathClosed(selected.d);
       const center = getPathCenter(selected.d);
-      status = { ...pathStatus, center };
+      status = {...pathStatus, center};
     } else if (selected.type === 'rect') {
       status = {
         hasPath: true,
         isClosed: true,
-        center: { x: selected.x + selected.width / 2, y: selected.y + selected.height / 2 },
+        center: {x: selected.x + selected.width / 2, y: selected.y + selected.height / 2},
       };
     } else if (selected.type === 'ellipse') {
       status = {
         hasPath: true,
         isClosed: true,
-        center: { x: selected.cx, y: selected.cy },
+        center: {x: selected.cx, y: selected.cy},
       };
     } else if (selected.type === 'polygon' && selected.points) {
       const pts = selected.points;
@@ -1030,7 +1042,7 @@ export default function Editor() {
       status = {
         hasPath: true,
         isClosed: true,
-        center: { x: centerX, y: centerY },
+        center: {x: centerX, y: centerY},
       };
     }
 
@@ -1113,7 +1125,7 @@ export default function Editor() {
   // Lock all sizes
   function lockAllSizes() {
     pushHistory();
-    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: true })));
+    setObjects(prev => prev.map(o => ({...o, sizeLocked: true})));
     setSizesLocked(true);
     toast.success('All sizes locked');
   }
@@ -1121,7 +1133,7 @@ export default function Editor() {
   // Unlock all sizes
   function unlockAllSizes() {
     pushHistory();
-    setObjects(prev => prev.map(o => ({ ...o, sizeLocked: false })));
+    setObjects(prev => prev.map(o => ({...o, sizeLocked: false})));
     setSizesLocked(false);
     toast.success(t('allSizesUnlockedMsg'));
   }
@@ -1130,10 +1142,10 @@ export default function Editor() {
   function scaleSelectedByPercent(scalePercent) {
     const ids = getTargetIds();
     if (ids.length === 0) return;
-    
+
     pushHistory();
     const objsToScale = objects.filter(o => ids.includes(o.id));
-    
+
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const o of objsToScale) {
       const bbox = getBBox(o);
@@ -1144,7 +1156,7 @@ export default function Editor() {
     }
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    
+
     setObjects(prev => prev.map(o => {
       if (!ids.includes(o.id)) return o;
       return scaleObjectFromCenter(o, scalePercent, centerX, centerY);
@@ -1155,16 +1167,16 @@ export default function Editor() {
   function applyColorToSymbol(mode) {
     const ids = getTargetIds();
     if (ids.length === 0) return;
-    
+
     pushHistory();
     const currentColor = selected?.fill || fill;
-    
+
     setObjects(prev => prev.map(o => {
       if (!ids.includes(o.id)) return o;
       if (mode === 'full') {
-        return { ...o, fill: currentColor, stroke: currentColor };
+        return {...o, fill: currentColor, stroke: currentColor};
       } else if (mode === 'border') {
-        return { ...o, fill: 'none', stroke: currentColor };
+        return {...o, fill: 'none', stroke: currentColor};
       }
       return o;
     }));
@@ -1191,8 +1203,8 @@ export default function Editor() {
   function updateDimensionLine(updates) {
     if (dimensionLines.length === 0) return;
     const lastId = dimensionLines[dimensionLines.length - 1]?.id;
-    setDimensionLines(prev => prev.map(d => 
-      d.id === lastId ? { ...d, ...updates } : d
+    setDimensionLines(prev => prev.map(d =>
+      d.id === lastId ? {...d, ...updates} : d
     ));
   }
 
@@ -1208,7 +1220,7 @@ export default function Editor() {
       toast.error(t('canvasEmpty'));
       return;
     }
-    
+
     // Calculate bounding box of all objects
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const o of drawableObjs) {
@@ -1218,25 +1230,25 @@ export default function Editor() {
       maxX = Math.max(maxX, bbox.x + bbox.w);
       maxY = Math.max(maxY, bbox.y + bbox.h);
     }
-    
+
     const width = maxX - minX;
     const height = maxY - minY;
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    
+
     // Translate objects so center is at origin
     const centeredObjs = drawableObjs.map(o => translateObject(o, -centerX, -centerY));
-    
+
     // Build SVG with viewBox centered at origin
-    const viewBox = `${-width/2} ${-height/2} ${width} ${height}`;
+    const viewBox = `${-width / 2} ${-height / 2} ${width} ${height}`;
     const svgContent = centeredObjs.map(o => shapeToSvgElement(o)).join('\n');
-    
+
     const svgString = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${width}" height="${height}">
   <!-- Ezcad centered export - origin at center -->
   ${svgContent}
 </svg>`;
-    
+
     downloadText(svgString, `${slug(name)}__ezcad_centered.svg`, 'image/svg+xml');
     toast.success(t('ezcadExported'));
   }
@@ -1244,7 +1256,7 @@ export default function Editor() {
   // Helper function for SVG element generation (simplified)
   function shapeToSvgElement(o) {
     const style = `fill="${o.fill || 'none'}" stroke="${o.stroke || 'none'}" stroke-width="${o.strokeWidth || 1}" opacity="${o.opacity ?? 1}"`;
-    
+
     switch (o.type) {
       case 'rect':
         return `<rect x="${o.x}" y="${o.y}" width="${o.width}" height="${o.height}" ${style} />`;
@@ -1286,7 +1298,8 @@ export default function Editor() {
             toast.success(`Imported ${shapes.length} shape(s) from SVG`);
             setImageMode(null);
             return;
-          } catch (err) {}
+          } catch (err) {
+          }
         }
         pushHistory();
         const img = new window.Image();
@@ -1367,7 +1380,7 @@ export default function Editor() {
 
   function exportPDF() {
     const svgString = buildSvg(objects, CANVAS_W, CANVAS_H);
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
@@ -1380,7 +1393,7 @@ export default function Editor() {
       ctx.drawImage(img, 0, 0, CANVAS_W, CANVAS_H);
       URL.revokeObjectURL(url);
       const dataUrl = cv.toDataURL('image/png');
-      const pdf = new jsPDF({ unit: 'pt', format: [CANVAS_W, CANVAS_H], orientation: 'portrait' });
+      const pdf = new jsPDF({unit: 'pt', format: [CANVAS_W, CANVAS_H], orientation: 'portrait'});
       pdf.addImage(dataUrl, 'PNG', 0, 0, CANVAS_W, CANVAS_H);
       pdf.save(`${slug(name)}.pdf`);
       toast.success('PDF exported');
@@ -1411,7 +1424,7 @@ export default function Editor() {
       const colorsUsed = Array.from(new Set(objects.flatMap((o) => [o.fill, o.stroke]).filter((c) => c && c !== 'none')));
       const payload = {
         name, description,
-        canvas_data: { objects, palette, bgImage: bgImageUrl },
+        canvas_data: {objects, palette, bgImage: bgImageUrl},
         thumbnail, width: CANVAS_W, height: CANVAS_H, colors: colorsUsed,
       };
       if (designId) {
@@ -1420,7 +1433,7 @@ export default function Editor() {
       } else {
         const created = await designsApi.create(payload);
         toast.success('Design saved');
-        navigate(`/editor/${created.id}`, { replace: true });
+        navigate(`/editor/${created.id}`, {replace: true});
       }
     } catch (e) {
       toast.error('Save failed');
@@ -1447,26 +1460,26 @@ export default function Editor() {
           className="bg-transparent border border-zinc-800 px-3 py-2 text-sm text-zinc-300 focus:border-amber-500 focus:outline-none flex-1 min-w-[200px]"
           placeholder="Description (optional)"
         />
-        <ToolbarButton onClick={undo} testId="editor-undo" label={t('undo')} icon={RotateCcw} />
-        <ToolbarButton onClick={redo} testId="editor-redo" label={t('redo')} />
-        <ToolbarButton onClick={clearAll} testId="editor-clear" label={t('clear')} icon={Trash2} danger />
-        <LanguageSelector />
+        <ToolbarButton onClick={undo} testId="editor-undo" label={t('undo')} icon={RotateCcw}/>
+        <ToolbarButton onClick={redo} testId="editor-redo" label={t('redo')}/>
+        <ToolbarButton onClick={clearAll} testId="editor-clear" label={t('clear')} icon={Trash2} danger/>
+        <LanguageSelector/>
         <div className="ml-auto flex gap-2">
           <button onClick={saveDesign} disabled={saving} data-testid="editor-save"
-            className="px-4 py-2 border border-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-500 transition-colors text-xs font-mono uppercase tracking-widest disabled:opacity-50">
-            <Save className="w-4 h-4 inline -mt-1 mr-1" /> {saving ? t('saving') : t('save')}
+                  className="px-4 py-2 border border-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-500 transition-colors text-xs font-mono uppercase tracking-widest disabled:opacity-50">
+            <Save className="w-4 h-4 inline -mt-1 mr-1"/> {saving ? t('saving') : t('save')}
           </button>
           <button onClick={exportPDF} data-testid="editor-export-pdf"
-            className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-400 text-xs font-mono uppercase tracking-widest">
-            <FileImage className="w-4 h-4 inline -mt-1 mr-1" /> {t('pdf')}
+                  className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-400 text-xs font-mono uppercase tracking-widest">
+            <FileImage className="w-4 h-4 inline -mt-1 mr-1"/> {t('pdf')}
           </button>
           <button onClick={exportSVG} data-testid="editor-export-svg"
-            className="px-4 py-2 bg-white text-black hover:bg-zinc-200 text-xs font-mono uppercase tracking-widest">
-            <Download className="w-4 h-4 inline -mt-1 mr-1" /> {t('svgByColor')}
+                  className="px-4 py-2 bg-white text-black hover:bg-zinc-200 text-xs font-mono uppercase tracking-widest">
+            <Download className="w-4 h-4 inline -mt-1 mr-1"/> {t('svgByColor')}
           </button>
           <button onClick={exportEzcadSVG} data-testid="editor-export-ezcad"
-            className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-400 text-xs font-mono uppercase tracking-widest">
-            <Ruler className="w-4 h-4 inline -mt-1 mr-1" /> {t('exportEzcad')}
+                  className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-400 text-xs font-mono uppercase tracking-widest">
+            <Ruler className="w-4 h-4 inline -mt-1 mr-1"/> {t('exportEzcad')}
           </button>
         </div>
       </div>
@@ -1554,20 +1567,29 @@ export default function Editor() {
       />
 
       <div className="flex flex-1 min-h-0">
-        <aside className="w-14 border-r border-zinc-900 flex flex-col items-center py-2 gap-1.5" data-testid="left-tools">
+        <aside className="w-14 border-r border-zinc-900 flex flex-col items-center py-2 gap-1.5"
+               data-testid="left-tools">
           {TOOLS.map((t) => (
-            <ToolButton key={t.id} active={tool === t.id} onClick={() => setTool(t.id)} title={t.label} testId={t.testId}>
-              {TOOL_ICONS[t.id] && React.createElement(TOOL_ICONS[t.id], { className: "w-5 h-5", strokeWidth: 1.5 })}
+            <ToolButton key={t.id} active={tool === t.id} onClick={() => setTool(t.id)} title={t.label}
+                        testId={t.testId}>
+              {TOOL_ICONS[t.id] && React.createElement(TOOL_ICONS[t.id], {className: "w-5 h-5", strokeWidth: 1.5})}
             </ToolButton>
           ))}
-          <div className="w-full h-px bg-zinc-900 my-1.5" />
-          <ToolButton active={false} onClick={() => { setImageMode(null); fileInputRef.current?.click(); }} title="Upload image" testId="tool-image">
-            <ImageIcon className="w-5 h-5" strokeWidth={1.5} />
+          <div className="w-full h-px bg-zinc-900 my-1.5"/>
+          <ToolButton active={false} onClick={() => {
+            setImageMode(null);
+            fileInputRef.current?.click();
+          }} title="Upload image" testId="tool-image">
+            <ImageIcon className="w-5 h-5" strokeWidth={1.5}/>
           </ToolButton>
-          <ToolButton active={false} onClick={() => { setImageMode('trace'); fileInputRef.current?.click(); }} title="Trace bitmap" testId="tool-trace">
-            <Wand2 className="w-5 h-5" strokeWidth={1.5} />
+          <ToolButton active={false} onClick={() => {
+            setImageMode('trace');
+            fileInputRef.current?.click();
+          }} title="Trace bitmap" testId="tool-trace">
+            <Wand2 className="w-5 h-5" strokeWidth={1.5}/>
           </ToolButton>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onUploadImage} data-testid="image-file-input" />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onUploadImage}
+                 data-testid="image-file-input"/>
         </aside>
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-grid-fine min-h-0 overflow-auto">
           <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -1598,7 +1620,7 @@ export default function Editor() {
                 />
               )}
             </div>
-            
+
             {/* Glass size selector */}
             <div className="flex items-center gap-2" data-testid="glass-size-switch">
               <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('glassSize')}:</span>
@@ -1624,74 +1646,84 @@ export default function Editor() {
               </div>
             </div>
           </div>
-          <div className="relative w-full max-w-[640px]" style={{ aspectRatio: '1/1' }}>
-<div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
-  {actualCanvasMm} x {actualCanvasMm} mm
-  </div>
+          <div className="relative w-full max-w-[640px]" style={{aspectRatio: '1/1'}}>
+            <div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
+              {actualCanvasMm} x {actualCanvasMm} mm
+            </div>
             {largestLayerInfo && (
-              <div className="absolute -top-6 right-0 font-mono text-sm font-bold text-amber-500" data-testid="largest-layer-size">
+              <div className="absolute -top-6 right-0 font-mono text-sm font-bold text-amber-500"
+                   data-testid="largest-layer-size">
                 Max: {largestLayerInfo.sizeMm.toFixed(1)} mm
               </div>
             )}
-<CanvasSVG
-  width={CANVAS_W} height={CANVAS_H}
-  canvasMm={actualCanvasMm}
-  objects={objects} setObjects={setObjects}
-  selectedId={selectedId} setSelectedId={setSelectedId}
-  tool={tool} setTool={setTool}
-  fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
-  bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
-  onPointerCoords={(x, y) => setPointer({ x, y })}
-  glassSize={glassSize}
-  showGrid={showGrid}
-  snapToGrid={snapToGrid}
-  gridSize={gridSize}
-  wireframeMode={wireframeMode}
-  showSnapGuides={showSnapGuides}
-  snapEnabled={snapEnabled}
-  snapToCenter={snapToCenter}
-  snapToCircles={snapToCircles}
-  snapThreshold={snapThreshold}
-  />
+            <CanvasSVG
+              width={CANVAS_W} height={CANVAS_H}
+              canvasMm={actualCanvasMm}
+              objects={objects} setObjects={setObjects}
+              selectedId={selectedId} setSelectedId={setSelectedId}
+              tool={tool} setTool={setTool}
+              fill={fill} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity}
+              bgImageUrl={bgImageUrl} bgOpacity={bgOpacity}
+              onPointerCoords={(x, y) => setPointer({x, y})}
+              glassSize={glassSize}
+              showGrid={showGrid}
+              snapToGrid={snapToGrid}
+              gridSize={gridSize}
+              wireframeMode={wireframeMode}
+              showSnapGuides={showSnapGuides}
+              snapEnabled={snapEnabled}
+              snapToCenter={snapToCenter}
+              snapToCircles={snapToCircles}
+              snapThreshold={snapThreshold}
+            />
           </div>
         </div>
 
         <aside className="w-96 border-l border-zinc-900 flex flex-col overflow-y-auto" data-testid="right-panel">
-          <Panel title="Tool defaults">
-            <ColorRow label="Fill" value={fill} onChange={setFill} testId="default-fill" />
-            <ColorRow label="Stroke" value={stroke} onChange={setStroke} testId="default-stroke" />
-            <SliderRow label="Stroke" value={strokeWidth} onChange={setStrokeWidth} min={0} max={60} testId="default-stroke-w" />
-            <SliderRow label="Opacity" value={opacity * 100} onChange={(v) => setOpacity(v / 100)} min={0} max={100} testId="default-opacity" />
-          </Panel>
 
           <Panel title="Palette" data-testid="editor-color-palette">
-            <div className="grid grid-cols-6 gap-1.5">
+            <div className="grid grid-cols-7 gap-1.5">
               {palette.map((c) => (
-                <button key={c} onClick={() => setFill(c)} title={c}
-                  data-testid={`palette-${c}`}
-                  className={`w-8 h-8 border-2 ${fill === c ? 'border-amber-500' : 'border-zinc-800'} hover:border-amber-500/70`}
-                  style={{ background: c }} />
+                <button
+                  key={c}
+                  onClick={() => {
+                    if (selected) {
+                      updateSelected({fill: c});
+                    } else {
+                      setFill(c);
+                    }
+                  }} title={c} data-testid={`palette-${c}`} className={`w-8 h-8 border-2 ${
+                  selected ? (selected.fill === c ? 'border-amber-500' : 'border-zinc-600') :
+                    (fill === c ? 'border-amber-500' : 'border-zinc-600')
+                } hover:border-amber-500/70`} style={{background: c}}/>
               ))}
             </div>
           </Panel>
 
           {selected && (
             <Panel title={`Selected: ${selected.type}`}>
-              <ColorRow label="Fill" value={selected.fill || '#000000'} onChange={(v) => updateSelected({ fill: v })} testId="sel-fill" />
-              <ColorRow label="Stroke" value={selected.stroke || '#000000'} onChange={(v) => updateSelected({ stroke: v })} testId="sel-stroke" />
-              <SliderRow label="Stroke W" value={selected.strokeWidth || 0} onChange={(v) => updateSelected({ strokeWidth: v })} min={0} max={60} testId="sel-stroke-w" />
-              <SliderRow label="Opacity" value={(selected.opacity ?? 1) * 100} onChange={(v) => updateSelected({ opacity: v / 100 })} min={0} max={100} testId="sel-opacity" />
+              <ColorRow label="Fill" value={selected.fill || '#000000'} onChange={(v) => updateSelected({fill: v})}
+                        testId="sel-fill"/>
+              <ColorRow label="Stroke" value={selected.stroke || '#000000'}
+                        onChange={(v) => updateSelected({stroke: v})} testId="sel-stroke"/>
+              <SliderRow label="Stroke W" value={selected.strokeWidth || 0}
+                         onChange={(v) => updateSelected({strokeWidth: v})} min={0} max={60} testId="sel-stroke-w"/>
+              <SliderRow label="Opacity" value={(selected.opacity ?? 1) * 100}
+                         onChange={(v) => updateSelected({opacity: v / 100})} min={0} max={100} testId="sel-opacity"/>
               {selected.type === 'text' && (
                 <>
-                  <input type="text" value={selected.text || ''} onChange={(e) => updateSelected({ text: e.target.value })}
-                    className="mt-2 w-full bg-transparent border border-zinc-800 px-2 py-1 text-xs font-mono text-white focus:border-amber-500 focus:outline-none" />
-                  <SliderRow label="Size" value={selected.fontSize || 24} onChange={(v) => updateSelected({ fontSize: v })} min={8} max={200} testId="sel-fontsize" />
+                  <input type="text" value={selected.text || ''}
+                         onChange={(e) => updateSelected({text: e.target.value})}
+                         className="mt-2 w-full bg-transparent border border-zinc-800 px-2 py-1 text-xs font-mono text-white focus:border-amber-500 focus:outline-none"/>
+                  <SliderRow label="Size" value={selected.fontSize || 24}
+                             onChange={(v) => updateSelected({fontSize: v})} min={8} max={200} testId="sel-fontsize"/>
                 </>
               )}
               <div className="grid grid-cols-3 gap-1.5 mt-3">
-                <SmallBtn onClick={bringForward} testId="bring-forward"><ArrowUp className="w-3.5 h-3.5" /> Up</SmallBtn>
-                <SmallBtn onClick={sendBackward} testId="send-backward"><ArrowDown className="w-3.5 h-3.5" /> Down</SmallBtn>
-                <SmallBtn onClick={deleteSelected} testId="delete-selected" danger><Trash2 className="w-3.5 h-3.5" /> Del</SmallBtn>
+                <SmallBtn onClick={bringForward} testId="bring-forward"><ArrowUp className="w-3.5 h-3.5"/> Up</SmallBtn>
+                <SmallBtn onClick={sendBackward} testId="send-backward"><ArrowDown
+                  className="w-3.5 h-3.5"/> Down</SmallBtn>
+                <SmallBtn onClick={deleteSelected} testId="delete-selected" danger><Trash2 className="w-3.5 h-3.5"/> Del</SmallBtn>
               </div>
             </Panel>
           )}
@@ -1703,28 +1735,33 @@ export default function Editor() {
               <>
                 <div className="flex items-center gap-1 mb-2 pb-2 border-b border-zinc-800">
                   <button onClick={selectAllLayers}
-                    className="px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400 hover:text-amber-500 border border-zinc-800 hover:border-amber-500"
-                    title="Select all" data-testid="select-all-layers">
+                          className="px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400 hover:text-amber-500 border border-zinc-800 hover:border-amber-500"
+                          title="Select all" data-testid="select-all-layers">
                     All
                   </button>
                   <button onClick={deselectAllLayers}
-                    className="px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400 hover:text-amber-500 border border-zinc-800 hover:border-amber-500"
-                    title="Deselect all" data-testid="deselect-all-layers">
+                          className="px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400 hover:text-amber-500 border border-zinc-800 hover:border-amber-500"
+                          title="Deselect all" data-testid="deselect-all-layers">
                     None
                   </button>
                   {selectedLayerIds.size > 0 && (
                     <>
-                      <div className="w-px h-4 bg-zinc-700 mx-1" />
-                      <button onClick={toggleVisibilitySelectedLayers} className="p-1 text-zinc-400 hover:text-amber-500" title="Toggle visibility" data-testid="toggle-visibility-selected">
-                        <Eye className="w-3.5 h-3.5" />
+                      <div className="w-px h-4 bg-zinc-700 mx-1"/>
+                      <button onClick={toggleVisibilitySelectedLayers}
+                              className="p-1 text-zinc-400 hover:text-amber-500" title="Toggle visibility"
+                              data-testid="toggle-visibility-selected">
+                        <Eye className="w-3.5 h-3.5"/>
                       </button>
-                      <button onClick={toggleLockSelectedLayers} className="p-1 text-zinc-400 hover:text-amber-500" title="Toggle lock" data-testid="toggle-lock-selected">
-                        <Lock className="w-3.5 h-3.5" />
+                      <button onClick={toggleLockSelectedLayers} className="p-1 text-zinc-400 hover:text-amber-500"
+                              title="Toggle lock" data-testid="toggle-lock-selected">
+                        <Lock className="w-3.5 h-3.5"/>
                       </button>
-                      <button onClick={deleteSelectedLayers} className="p-1 text-zinc-400 hover:text-red-400" title="Delete selected" data-testid="delete-selected-layers">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={deleteSelectedLayers} className="p-1 text-zinc-400 hover:text-red-400"
+                              title="Delete selected" data-testid="delete-selected-layers">
+                        <Trash2 className="w-3.5 h-3.5"/>
                       </button>
-                      <span className="ml-auto text-[9px] font-mono text-zinc-500">{selectedLayerIds.size} selected</span>
+                      <span
+                        className="ml-auto text-[9px] font-mono text-zinc-500">{selectedLayerIds.size} selected</span>
                     </>
                   )}
                 </div>
@@ -1738,8 +1775,8 @@ export default function Editor() {
                     const isDragOver = dragOverLayerId === o.id && draggedLayerId !== o.id;
 
                     return (
-                      <li 
-                        key={o.id} 
+                      <li
+                        key={o.id}
                         data-testid={`layer-${o.id}`}
                         draggable
                         onDragStart={(e) => handleLayerDragStart(e, o.id)}
@@ -1748,37 +1785,50 @@ export default function Editor() {
                         onDragLeave={handleLayerDragLeave}
                         onDrop={(e) => handleLayerDrop(e, o.id)}
                         className={`flex items-center gap-1.5 border transition-all duration-150 ${
-                          isDragOver 
-                            ? 'border-amber-500 border-2 bg-amber-500/20' 
+                          isDragOver
+                            ? 'border-amber-500 border-2 bg-amber-500/20'
                             : isDragging
                               ? 'border-zinc-600 opacity-50'
-                              : selectedLayerIds.has(o.id) 
-                                ? 'border-blue-500 bg-blue-500/10' 
-                                : o.id === selectedId 
-                                  ? 'border-amber-500' 
+                              : selectedLayerIds.has(o.id)
+                                ? 'border-blue-500 bg-blue-500/10'
+                                : o.id === selectedId
+                                  ? 'border-amber-500'
                                   : 'border-zinc-800'
                         } px-2 py-1 cursor-grab active:cursor-grabbing`}
                       >
                         <div className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing">
-                          <GripVertical className="w-3.5 h-3.5" />
+                          <GripVertical className="w-3.5 h-3.5"/>
                         </div>
-                        <input type="checkbox" checked={selectedLayerIds.has(o.id)} onChange={() => toggleLayerSelection(o.id)}
-                          className="w-3 h-3 accent-blue-500 cursor-pointer" data-testid={`layer-checkbox-${o.id}`} />
-                        <button onClick={() => setObjects((prev) => prev.map((x) => x.id === o.id ? { ...x, visible: !(x.visible !== false) } : x))}
-                          className="text-zinc-400 hover:text-amber-500" title="Visibility">
-                          {o.visible !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        <input type="checkbox" checked={selectedLayerIds.has(o.id)}
+                               onChange={() => toggleLayerSelection(o.id)}
+                               className="w-3 h-3 accent-blue-500 cursor-pointer"
+                               data-testid={`layer-checkbox-${o.id}`}/>
+                        <button onClick={() => setObjects((prev) => prev.map((x) => x.id === o.id ? {
+                          ...x,
+                          visible: !(x.visible !== false)
+                        } : x))}
+                                className="text-zinc-400 hover:text-amber-500" title="Visibility">
+                          {o.visible !== false ? <Eye className="w-3.5 h-3.5"/> : <EyeOff className="w-3.5 h-3.5"/>}
                         </button>
-                        <button onClick={() => setObjects((prev) => prev.map((x) => x.id === o.id ? { ...x, locked: !x.locked } : x))}
-                          className="text-zinc-400 hover:text-amber-500" title="Lock">
-                          {o.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                        <button onClick={() => setObjects((prev) => prev.map((x) => x.id === o.id ? {
+                          ...x,
+                          locked: !x.locked
+                        } : x))}
+                                className="text-zinc-400 hover:text-amber-500" title="Lock">
+                          {o.locked ? <Lock className="w-3.5 h-3.5"/> : <Unlock className="w-3.5 h-3.5"/>}
                         </button>
-                        <span onClick={() => { setSelectedId(o.id); setSelectedLayerIds(new Set()); }}
-                          className={`flex-1 truncate text-xs font-mono cursor-pointer ${o.id === selectedId ? 'text-amber-500' : 'text-zinc-300'}`}
-                          title={o.name || o.type}>
+                        <span onClick={() => {
+                          setSelectedId(o.id);
+                          setSelectedLayerIds(new Set());
+                        }}
+                              className={`flex-1 truncate text-xs font-mono cursor-pointer ${o.id === selectedId ? 'text-amber-500' : 'text-zinc-300'}`}
+                              title={o.name || o.type}>
                           {o.name || o.type}
                         </span>
-                        <div className="w-4 h-4 border border-zinc-700" style={{ background: o.fill === 'none' ? 'transparent' : o.fill }} />
-                        <span className={`text-[9px] font-mono ${isLargest ? 'text-amber-500 font-bold' : 'text-zinc-500'}`}>
+                        <div className="w-4 h-4 border border-zinc-700"
+                             style={{background: o.fill === 'none' ? 'transparent' : o.fill}}/>
+                        <span
+                          className={`text-[9px] font-mono ${isLargest ? 'text-amber-500 font-bold' : 'text-zinc-500'}`}>
                           {sizeMm.toFixed(1)}mm
                         </span>
                       </li>
@@ -1810,7 +1860,7 @@ async function buildThumbnail(objects) {
   if (objects.length === 0) return null;
   try {
     const svgString = buildSvg(objects, CANVAS_W, CANVAS_H);
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const img = await new Promise((res, rej) => {
       const i = new Image();
