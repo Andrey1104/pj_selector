@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   AlignLeft, AlignCenter, AlignRight, AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   FlipHorizontal, FlipVertical, RotateCw, RotateCcw, Copy, Clipboard,
@@ -9,124 +9,124 @@ import {
   Ruler, Palette, MousePointer2, SquareDashedMousePointer, Percent,
   Target, CircleDot, Merge, Scissors, CornerDownRight
 } from 'lucide-react';
-import { IconButton, ButtonGroup, Separator, TabButton } from './EditorUI';
-import { useTranslation } from '@/lib/i18n';
+import {IconButton, ButtonGroup, Separator, TabButton} from './EditorUI';
+import {useTranslation} from '@/lib/i18n';
 
 export const SYSTEM_FONTS = [
-  { name: 'Arial', family: 'Arial, sans-serif' },
-  { name: 'Helvetica', family: 'Helvetica, sans-serif' },
-  { name: 'Times New Roman', family: '"Times New Roman", serif' },
-  { name: 'Georgia', family: 'Georgia, serif' },
-  { name: 'Courier New', family: '"Courier New", monospace' },
-  { name: 'Verdana', family: 'Verdana, sans-serif' },
-  { name: 'Trebuchet MS', family: '"Trebuchet MS", sans-serif' },
-  { name: 'Impact', family: 'Impact, sans-serif' },
-  { name: 'Comic Sans MS', family: '"Comic Sans MS", cursive' },
-  { name: 'Palatino', family: '"Palatino Linotype", serif' },
+  {name: 'Arial', family: 'Arial, sans-serif'},
+  {name: 'Helvetica', family: 'Helvetica, sans-serif'},
+  {name: 'Times New Roman', family: '"Times New Roman", serif'},
+  {name: 'Georgia', family: 'Georgia, serif'},
+  {name: 'Courier New', family: '"Courier New", monospace'},
+  {name: 'Verdana', family: 'Verdana, sans-serif'},
+  {name: 'Trebuchet MS', family: '"Trebuchet MS", sans-serif'},
+  {name: 'Impact', family: 'Impact, sans-serif'},
+  {name: 'Comic Sans MS', family: '"Comic Sans MS", cursive'},
+  {name: 'Palatino', family: '"Palatino Linotype", serif'},
 ];
 
 export function AdvancedToolbar({
-  hasSelection,
-  selectedCount,
+                                  hasSelection,
+                                  selectedCount,
 
-  onAlignLeft,
-  onAlignCenterH,
-  onAlignRight,
-  onAlignTop,
-  onAlignCenterV,
-  onAlignBottom,
-  onFlipHorizontal,
-  onFlipVertical,
-  onRotateCW,
-  onRotateCCW,
-  onRotateByAngle,
-  onCenterOnCanvas,
+                                  onAlignLeft,
+                                  onAlignCenterH,
+                                  onAlignRight,
+                                  onAlignTop,
+                                  onAlignCenterV,
+                                  onAlignBottom,
+                                  onFlipHorizontal,
+                                  onFlipVertical,
+                                  onRotateCW,
+                                  onRotateCCW,
+                                  onRotateByAngle,
+                                  onCenterOnCanvas,
 
-  onBringForward,
-  onSendBackward,
-  onBringToFront,
-  onSendToBack,
+                                  onBringForward,
+                                  onSendBackward,
+                                  onBringToFront,
+                                  onSendToBack,
 
-  onCopy,
-  onPaste,
-  onDuplicate,
-  onDelete,
+                                  onCopy,
+                                  onPaste,
+                                  onDuplicate,
+                                  onDelete,
 
-  showGrid,
-  setShowGrid,
-  snapToGrid,
-  setSnapToGrid,
-  gridSize,
-  setGridSize,
-  zoom,
-  setZoom,
+                                  showGrid,
+                                  setShowGrid,
+                                  snapToGrid,
+                                  setSnapToGrid,
+                                  gridSize,
+                                  setGridSize,
+                                  zoom,
+                                  setZoom,
 
-  onToggleVisibility,
-  onToggleLock,
+                                  onToggleVisibility,
+                                  onToggleLock,
 
-  selectedObject,
-  onUpdateSelected,
+                                  selectedObject,
+                                  onUpdateSelected,
 
-  wireframeMode,
-  setWireframeMode,
-  onSplitVector,
-  canSplitVector,
-  onVerifyOutlines,
-  outlineStatus,
-  onGenerateCenterOutline,
-  sizesLocked,
-  onLockAllSizes,
-  onUnlockAllSizes,
+                                  wireframeMode,
+                                  setWireframeMode,
+                                  onSplitVector,
+                                  canSplitVector,
+                                  onVerifyOutlines,
+                                  outlineStatus,
+                                  onGenerateCenterOutline,
+                                  sizesLocked,
+                                  onLockAllSizes,
+                                  onUnlockAllSizes,
 
-  rotationAngle,
-  setRotationAngle,
-  scalePercent,
-  setScalePercent,
-  onApplyRotation,
-  onApplyScale,
+                                  rotationAngle,
+                                  setRotationAngle,
+                                  scalePercent,
+                                  setScalePercent,
+                                  onApplyRotation,
+                                  onApplyScale,
 
 
-  colorMode,
-  setColorMode,
-  onApplyColorToSymbol,
+                                  colorMode,
+                                  setColorMode,
+                                  onApplyColorToSymbol,
 
-  dimensionLines,
-  onAddDimensionLine,
-  onUpdateDimensionLine,
-  onDeleteDimensionLine,
-  dimensionColor,
-  setDimensionColor,
+                                  dimensionLines,
+                                  onAddDimensionLine,
+                                  onUpdateDimensionLine,
+                                  onDeleteDimensionLine,
+                                  dimensionColor,
+                                  setDimensionColor,
 
-  selectionMode,
-  setSelectionMode,
-  onSelectAll,
-  onDeselectAll,
+                                  selectionMode,
+                                  setSelectionMode,
+                                  onSelectAll,
+                                  onDeselectAll,
 
-  snapEnabled,
-  setSnapEnabled,
-  snapToCenter,
-  setSnapToCenter,
-  snapToCircles,
-  setSnapToCircles,
-  showSnapGuides,
-  setShowSnapGuides,
-  snapThreshold,
-  setSnapThreshold,
-  onSnapToCenter,
-  onSnapToInnerCircle,
-  onSnapToOuterCircle,
+                                  snapEnabled,
+                                  setSnapEnabled,
+                                  snapToCenter,
+                                  setSnapToCenter,
+                                  snapToCircles,
+                                  setSnapToCircles,
+                                  showSnapGuides,
+                                  setShowSnapGuides,
+                                  snapThreshold,
+                                  setSnapThreshold,
+                                  onSnapToCenter,
+                                  onSnapToInnerCircle,
+                                  onSnapToOuterCircle,
 
-  cornerRadius,
-  setCornerRadius,
-  onApplyCornerRadius,
-  canApplyCornerRadius,
+                                  cornerRadius,
+                                  setCornerRadius,
+                                  onApplyCornerRadius,
+                                  canApplyCornerRadius,
 
-  onMergeVectors,
-  canMergeVectors,
-  onSplitByCircle,
-  canSplitByCircle,
-}) {
-  const { t } = useTranslation();
+                                  onMergeVectors,
+                                  canMergeVectors,
+                                  onSplitByCircle,
+                                  canSplitByCircle,
+                                }) {
+  const {t} = useTranslation();
   const [activeTab, setActiveTab] = useState('transform');
   const [localRotation, setLocalRotation] = useState(0);
   const [localScale, setLocalScale] = useState(100);
@@ -160,71 +160,71 @@ export function AdvancedToolbar({
   return (
     <div className="border-b border-zinc-800 bg-zinc-900/50" data-testid="advanced-toolbar">
       <div className="flex items-center border-b border-zinc-800">
-        <TabButton 
-          active={activeTab === 'transform'} 
+        <TabButton
+          active={activeTab === 'transform'}
           onClick={() => setActiveTab('transform')}
           testId="toolbar-tab-transform"
         >
           {t('transform')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'arrange'} 
+        <TabButton
+          active={activeTab === 'arrange'}
           onClick={() => setActiveTab('arrange')}
           testId="toolbar-tab-arrange"
         >
           {t('arrange')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'edit'} 
+        <TabButton
+          active={activeTab === 'edit'}
           onClick={() => setActiveTab('edit')}
           testId="toolbar-tab-edit"
         >
           {t('edit')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'view'} 
+        <TabButton
+          active={activeTab === 'view'}
           onClick={() => setActiveTab('view')}
           testId="toolbar-tab-view"
         >
           {t('view')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'text'} 
+        <TabButton
+          active={activeTab === 'text'}
           onClick={() => setActiveTab('text')}
           testId="toolbar-tab-text"
         >
           {t('textTab')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'coloring'} 
+        <TabButton
+          active={activeTab === 'coloring'}
           onClick={() => setActiveTab('coloring')}
           testId="toolbar-tab-coloring"
         >
           {t('coloring')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'dimensions'} 
+        <TabButton
+          active={activeTab === 'dimensions'}
           onClick={() => setActiveTab('dimensions')}
           testId="toolbar-tab-dimensions"
         >
           {t('dimensions')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'vectors'} 
+        <TabButton
+          active={activeTab === 'vectors'}
           onClick={() => setActiveTab('vectors')}
           testId="toolbar-tab-vectors"
         >
           {t('vectors')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'outlines'} 
+        <TabButton
+          active={activeTab === 'outlines'}
           onClick={() => setActiveTab('outlines')}
           testId="toolbar-tab-outlines"
         >
           {t('outlines')}
         </TabButton>
-        <TabButton 
-          active={activeTab === 'snap'} 
+        <TabButton
+          active={activeTab === 'snap'}
           onClick={() => setActiveTab('snap')}
           testId="toolbar-tab-snap"
         >
@@ -245,46 +245,46 @@ export function AdvancedToolbar({
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('align')}</span>
               <div className="flex gap-0.5">
                 <ButtonGroup>
-                  <IconButton 
-                    icon={AlignLeft} 
-                    title={t('alignLeft')} 
+                  <IconButton
+                    icon={AlignLeft}
+                    title={t('alignLeft')}
                     onClick={onAlignLeft}
                     disabled={!hasSelection}
                     testId="align-left"
                   />
-                  <IconButton 
-                    icon={AlignCenter} 
-                    title={t('alignCenter')} 
+                  <IconButton
+                    icon={AlignCenter}
+                    title={t('alignCenter')}
                     onClick={onAlignCenterH}
                     disabled={!hasSelection}
                     testId="align-center-h"
                   />
-                  <IconButton 
-                    icon={AlignRight} 
-                    title={t('alignRight')} 
+                  <IconButton
+                    icon={AlignRight}
+                    title={t('alignRight')}
                     onClick={onAlignRight}
                     disabled={!hasSelection}
                     testId="align-right"
                   />
                 </ButtonGroup>
                 <ButtonGroup>
-                  <IconButton 
-                    icon={AlignStartVertical} 
-                    title={t('alignTop')} 
+                  <IconButton
+                    icon={AlignStartVertical}
+                    title={t('alignTop')}
                     onClick={onAlignTop}
                     disabled={!hasSelection}
                     testId="align-top"
                   />
-                  <IconButton 
-                    icon={AlignCenterVertical} 
-                    title={t('alignCenterV')} 
+                  <IconButton
+                    icon={AlignCenterVertical}
+                    title={t('alignCenterV')}
                     onClick={onAlignCenterV}
                     disabled={!hasSelection}
                     testId="align-center-v"
                   />
-                  <IconButton 
-                    icon={AlignEndVertical} 
-                    title={t('alignBottom')} 
+                  <IconButton
+                    icon={AlignEndVertical}
+                    title={t('alignBottom')}
                     onClick={onAlignBottom}
                     disabled={!hasSelection}
                     testId="align-bottom"
@@ -293,21 +293,21 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('flip')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={FlipHorizontal} 
-                  title={t('flipHorizontal')} 
+                <IconButton
+                  icon={FlipHorizontal}
+                  title={t('flipHorizontal')}
                   onClick={onFlipHorizontal}
                   disabled={!hasSelection}
                   testId="flip-horizontal"
                 />
-                <IconButton 
-                  icon={FlipVertical} 
-                  title={t('flipVertical')} 
+                <IconButton
+                  icon={FlipVertical}
+                  title={t('flipVertical')}
                   onClick={onFlipVertical}
                   disabled={!hasSelection}
                   testId="flip-vertical"
@@ -315,22 +315,22 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('rotate')}</span>
               <div className="flex items-center gap-1">
                 <ButtonGroup>
-                  <IconButton 
-                    icon={RotateCcw} 
-                    title={t('rotateCCW')} 
+                  <IconButton
+                    icon={RotateCcw}
+                    title={t('rotateCCW')}
                     onClick={() => onRotateCCW?.(-90)}
                     disabled={!hasSelection}
                     testId="rotate-ccw"
                   />
-                  <IconButton 
-                    icon={RotateCw} 
-                    title={t('rotateCW')} 
+                  <IconButton
+                    icon={RotateCw}
+                    title={t('rotateCW')}
                     onClick={() => onRotateCW?.(90)}
                     disabled={!hasSelection}
                     testId="rotate-cw"
@@ -339,7 +339,7 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('angle')}</span>
@@ -366,7 +366,7 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('scale')}</span>
@@ -383,7 +383,7 @@ export function AdvancedToolbar({
                   disabled={!hasSelection}
                   data-testid="scale-input"
                 />
-                <Percent className="w-3 h-3 text-zinc-500" />
+                <Percent className="w-3 h-3 text-zinc-500"/>
                 <button
                   onClick={handleApplyScale}
                   disabled={!hasSelection || localScale === 100}
@@ -395,13 +395,13 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('position')}</span>
-              <IconButton 
-                icon={Crosshair} 
-                title={t('centerOnCanvas')} 
+              <IconButton
+                icon={Crosshair}
+                title={t('centerOnCanvas')}
                 onClick={onCenterOnCanvas}
                 testId="center-on-canvas"
               />
@@ -414,16 +414,16 @@ export function AdvancedToolbar({
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('order')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={ArrowUp} 
-                  title={t('bringForward')} 
+                <IconButton
+                  icon={ArrowUp}
+                  title={t('bringForward')}
                   onClick={onBringForward}
                   disabled={!hasSelection}
                   testId="bring-forward"
                 />
-                <IconButton 
-                  icon={ArrowDown} 
-                  title={t('sendBackward')} 
+                <IconButton
+                  icon={ArrowDown}
+                  title={t('sendBackward')}
                   onClick={onSendBackward}
                   disabled={!hasSelection}
                   testId="send-backward"
@@ -431,20 +431,20 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('visibility')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Eye} 
-                  title={t('toggleVisibility')} 
+                <IconButton
+                  icon={Eye}
+                  title={t('toggleVisibility')}
                   onClick={onToggleVisibility}
                   disabled={!hasSelection}
                   testId="toggle-visibility"
                 />
-                <IconButton 
-                  icon={Lock} 
-                  title={t('toggleLock')} 
+                <IconButton
+                  icon={Lock}
+                  title={t('toggleLock')}
                   onClick={onToggleLock}
                   disabled={!hasSelection}
                   testId="toggle-lock"
@@ -452,20 +452,20 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('multiSelect')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={MousePointer2} 
+                <IconButton
+                  icon={MousePointer2}
                   title={t('select')}
                   onClick={() => setSelectionMode?.('single')}
                   active={selectionMode === 'single'}
                   testId="selection-single"
                 />
-                <IconButton 
-                  icon={SquareDashedMousePointer} 
+                <IconButton
+                  icon={SquareDashedMousePointer}
                   title={t('marqueeSelect')}
                   onClick={() => setSelectionMode?.('marquee')}
                   active={selectionMode === 'marquee'}
@@ -474,7 +474,7 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('selectAll')}</span>
@@ -503,28 +503,28 @@ export function AdvancedToolbar({
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('clipboard')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Copy} 
-                  title={`${t('copy')} (Ctrl+C)`} 
+                <IconButton
+                  icon={Copy}
+                  title={`${t('copy')} (Ctrl+C)`}
                   onClick={onCopy}
                   disabled={!hasSelection}
                   testId="copy"
                 />
-                <IconButton 
-                  icon={Clipboard} 
-                  title={`${t('paste')} (Ctrl+V)`} 
+                <IconButton
+                  icon={Clipboard}
+                  title={`${t('paste')} (Ctrl+V)`}
                   onClick={onPaste}
                   testId="paste"
                 />
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('delete')}</span>
-              <IconButton 
-                icon={Trash2} 
-                title={`${t('delete')} (Del)`} 
+              <IconButton
+                icon={Trash2}
+                title={`${t('delete')} (Del)`}
                 onClick={onDelete}
                 disabled={!hasSelection}
                 danger
@@ -539,23 +539,23 @@ export function AdvancedToolbar({
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('grid')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Grid3X3} 
-                  title={t('toggleGrid')} 
+                <IconButton
+                  icon={Grid3X3}
+                  title={t('toggleGrid')}
                   onClick={() => setShowGrid?.(!showGrid)}
                   active={showGrid}
                   testId="toggle-grid"
                 />
-                <IconButton 
-                  icon={Magnet} 
-                  title={t('snapToGrid')} 
+                <IconButton
+                  icon={Magnet}
+                  title={t('snapToGrid')}
                   onClick={() => setSnapToGrid?.(!snapToGrid)}
                   active={snapToGrid}
                   testId="toggle-snap"
                 />
               </ButtonGroup>
             </div>
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('gridSize')}</span>
               <div className="flex items-center gap-1">
@@ -572,40 +572,40 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('zoom')}</span>
               <div className="flex items-center gap-1">
                 <ButtonGroup>
-                  <IconButton 
-                    icon={ZoomOut} 
-                    title={t('zoomOut')} 
+                  <IconButton
+                    icon={ZoomOut}
+                    title={t('zoomOut')}
                     onClick={() => setZoom?.(Math.max(25, zoom - 25))}
                     testId="zoom-out"
                   />
-                  <IconButton 
-                    icon={ZoomIn} 
-                    title={t('zoomIn')} 
+                  <IconButton
+                    icon={ZoomIn}
+                    title={t('zoomIn')}
                     onClick={() => setZoom?.(Math.min(200, zoom + 25))}
                     testId="zoom-in"
                   />
-                  <IconButton 
-                    icon={Maximize2} 
-                    title={t('resetZoom')} 
+                  <IconButton
+                    icon={Maximize2}
+                    title={t('resetZoom')}
                     onClick={() => setZoom?.(100)}
                     testId="zoom-reset"
                   />
                 </ButtonGroup>
-            <span className="text-[10px] font-mono text-zinc-400 w-10 text-right">{zoom}%</span>
+                <span className="text-[10px] font-mono text-zinc-400 w-10 text-right">{zoom}%</span>
+              </div>
             </div>
-          </div>
 
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('wireframe')}</span>
-              <IconButton 
-                icon={Box} 
-                title={t('toggleWireframe')} 
+              <IconButton
+                icon={Box}
+                title={t('toggleWireframe')}
                 onClick={() => setWireframeMode?.(!wireframeMode)}
                 active={wireframeMode}
                 testId="toggle-wireframe"
@@ -619,39 +619,39 @@ export function AdvancedToolbar({
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('format')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Bold} 
-                  title={`${t('bold')} (Ctrl+B)`} 
+                <IconButton
+                  icon={Bold}
+                  title={`${t('bold')} (Ctrl+B)`}
                   onClick={() => {
                     if (selectedObject?.type === 'text') {
                       const isBold = selectedObject.fontWeight === 'bold';
-                      onUpdateSelected?.({ fontWeight: isBold ? 'normal' : 'bold' });
+                      onUpdateSelected?.({fontWeight: isBold ? 'normal' : 'bold'});
                     }
                   }}
                   active={selectedObject?.fontWeight === 'bold'}
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   testId="text-bold"
                 />
-                <IconButton 
-                  icon={Italic} 
-                  title={`${t('italic')} (Ctrl+I)`} 
+                <IconButton
+                  icon={Italic}
+                  title={`${t('italic')} (Ctrl+I)`}
                   onClick={() => {
                     if (selectedObject?.type === 'text') {
                       const isItalic = selectedObject.fontStyle === 'italic';
-                      onUpdateSelected?.({ fontStyle: isItalic ? 'normal' : 'italic' });
+                      onUpdateSelected?.({fontStyle: isItalic ? 'normal' : 'italic'});
                     }
                   }}
                   active={selectedObject?.fontStyle === 'italic'}
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   testId="text-italic"
                 />
-                <IconButton 
-                  icon={Underline} 
-                  title={`${t('underline')} (Ctrl+U)`} 
+                <IconButton
+                  icon={Underline}
+                  title={`${t('underline')} (Ctrl+U)`}
                   onClick={() => {
                     if (selectedObject?.type === 'text') {
                       const isUnderline = selectedObject.textDecoration === 'underline';
-                      onUpdateSelected?.({ textDecoration: isUnderline ? 'none' : 'underline' });
+                      onUpdateSelected?.({textDecoration: isUnderline ? 'none' : 'underline'});
                     }
                   }}
                   active={selectedObject?.textDecoration === 'underline'}
@@ -661,26 +661,26 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('fontFamily')}</span>
               <select
                 value={selectedObject?.fontFamily || 'Arial, sans-serif'}
-                onChange={(e) => onUpdateSelected?.({ fontFamily: e.target.value })}
+                onChange={(e) => onUpdateSelected?.({fontFamily: e.target.value})}
                 disabled={!selectedObject || selectedObject?.type !== 'text'}
                 className="bg-zinc-800 border border-zinc-700 px-2 py-1 text-xs font-mono text-white focus:border-amber-500 focus:outline-none disabled:opacity-50"
                 data-testid="font-family-select"
               >
                 {SYSTEM_FONTS.map((font) => (
-                  <option key={font.name} value={font.family} style={{ fontFamily: font.family }}>
+                  <option key={font.name} value={font.family} style={{fontFamily: font.family}}>
                     {font.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('size')}</span>
@@ -690,7 +690,7 @@ export function AdvancedToolbar({
                   min={8}
                   max={200}
                   value={selectedObject?.fontSize || 24}
-                  onChange={(e) => onUpdateSelected?.({ fontSize: Number(e.target.value) })}
+                  onChange={(e) => onUpdateSelected?.({fontSize: Number(e.target.value)})}
                   className="w-16 bg-zinc-800 border border-zinc-700 px-2 py-1 text-xs font-mono text-white focus:border-amber-500 focus:outline-none disabled:opacity-50"
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   data-testid="text-size-input"
@@ -699,30 +699,30 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('align')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={AlignLeft} 
-                  title={t('alignLeft')} 
-                  onClick={() => onUpdateSelected?.({ textAnchor: 'start' })}
+                <IconButton
+                  icon={AlignLeft}
+                  title={t('alignLeft')}
+                  onClick={() => onUpdateSelected?.({textAnchor: 'start'})}
                   active={selectedObject?.textAnchor === 'start' || !selectedObject?.textAnchor}
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   testId="text-align-left"
                 />
-                <IconButton 
-                  icon={AlignCenter} 
-                  title={t('alignCenter')} 
-                  onClick={() => onUpdateSelected?.({ textAnchor: 'middle' })}
+                <IconButton
+                  icon={AlignCenter}
+                  title={t('alignCenter')}
+                  onClick={() => onUpdateSelected?.({textAnchor: 'middle'})}
                   active={selectedObject?.textAnchor === 'middle'}
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   testId="text-align-center"
                 />
-                <IconButton 
-                  icon={AlignRight} 
-                  title={t('alignRight')} 
-                  onClick={() => onUpdateSelected?.({ textAnchor: 'end' })}
+                <IconButton
+                  icon={AlignRight}
+                  title={t('alignRight')}
+                  onClick={() => onUpdateSelected?.({textAnchor: 'end'})}
                   active={selectedObject?.textAnchor === 'end'}
                   disabled={!selectedObject || selectedObject?.type !== 'text'}
                   testId="text-align-right"
@@ -768,7 +768,7 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('applyToSymbol')}</span>
@@ -778,9 +778,9 @@ export function AdvancedToolbar({
                   value={selectedObject?.fill || '#F59E0B'}
                   onChange={(e) => {
                     if (colorMode === 'stroke') {
-                      onUpdateSelected?.({ stroke: e.target.value, fill: 'none' });
+                      onUpdateSelected?.({stroke: e.target.value, fill: 'none'});
                     } else {
-                      onUpdateSelected?.({ fill: e.target.value, stroke: e.target.value });
+                      onUpdateSelected?.({fill: e.target.value, stroke: e.target.value});
                     }
                   }}
                   className="w-8 h-8 bg-transparent border border-zinc-700 cursor-pointer"
@@ -820,15 +820,15 @@ export function AdvancedToolbar({
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('dimensionLines')}</span>
-              <IconButton 
-                icon={Ruler} 
+              <IconButton
+                icon={Ruler}
                 title={t('addDimension')}
                 onClick={onAddDimensionLine}
                 testId="add-dimension"
               />
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('dimensionAngle')}</span>
@@ -843,7 +843,7 @@ export function AdvancedToolbar({
                 />
                 <span className="text-[9px] font-mono text-zinc-500">°</span>
                 <button
-                  onClick={() => onUpdateDimensionLine?.({ angle: localDimensionAngle })}
+                  onClick={() => onUpdateDimensionLine?.({angle: localDimensionAngle})}
                   className="px-2 py-1 text-[9px] font-mono uppercase bg-amber-500/20 text-amber-500 border border-amber-500/50 hover:bg-amber-500 hover:text-black transition-colors"
                   data-testid="apply-dimension-angle"
                 >
@@ -852,7 +852,7 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('dimensionColor')}</span>
@@ -876,16 +876,16 @@ export function AdvancedToolbar({
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('split')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Split} 
-                  title={t('splitVector')} 
+                <IconButton
+                  icon={Split}
+                  title={t('splitVector')}
                   onClick={onSplitVector}
                   disabled={!canSplitVector}
                   testId="split-vector"
                 />
-                <IconButton 
-                  icon={Scissors} 
-                  title={t('splitByCircle') || 'Split by Circle'} 
+                <IconButton
+                  icon={Scissors}
+                  title={t('splitByCircle') || 'Split by Circle'}
                   onClick={onSplitByCircle}
                   disabled={!canSplitByCircle}
                   testId="split-by-circle"
@@ -893,23 +893,25 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('merge') || 'Merge'}</span>
-              <IconButton 
-                icon={Merge} 
-                title={t('mergeVectors') || 'Merge Vectors'} 
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('merge') || 'Merge'}</span>
+              <IconButton
+                icon={Merge}
+                title={t('mergeVectors') || 'Merge Vectors'}
                 onClick={onMergeVectors}
                 disabled={!canMergeVectors}
                 testId="merge-vectors"
               />
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('cornerRadius') || 'Corners'}</span>
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('cornerRadius') || 'Corners'}</span>
               <div className="flex items-center gap-1">
                 <input
                   type="range"
@@ -932,34 +934,34 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('view')}</span>
-              <IconButton 
-                icon={Box} 
-                title={t('toggleWireframe')} 
+              <IconButton
+                icon={Box}
+                title={t('toggleWireframe')}
                 onClick={() => setWireframeMode?.(!wireframeMode)}
                 active={wireframeMode}
                 testId="toggle-wireframe-vectors"
               />
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('sizeLock')}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={LockKeyhole} 
-                  title={t('lockAllSizes')} 
+                <IconButton
+                  icon={LockKeyhole}
+                  title={t('lockAllSizes')}
                   onClick={onLockAllSizes}
                   active={sizesLocked}
                   testId="lock-all-sizes"
                 />
-                <IconButton 
-                  icon={UnlockKeyhole} 
-                  title={t('unlockAllSizes')} 
+                <IconButton
+                  icon={UnlockKeyhole}
+                  title={t('unlockAllSizes')}
                   onClick={onUnlockAllSizes}
                   disabled={!sizesLocked}
                   testId="unlock-all-sizes"
@@ -985,22 +987,22 @@ export function AdvancedToolbar({
           <div className="flex items-center gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('verify')}</span>
-              <IconButton 
-                icon={CheckCircle} 
-                title={t('verifyOutlines')} 
+              <IconButton
+                icon={CheckCircle}
+                title={t('verifyOutlines')}
                 onClick={onVerifyOutlines}
                 disabled={!hasSelection}
                 testId="verify-outlines"
               />
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('center')}</span>
-              <IconButton 
-                icon={Circle} 
-                title={t('generateCenterOutline')} 
+              <IconButton
+                icon={Circle}
+                title={t('generateCenterOutline')}
                 onClick={onGenerateCenterOutline}
                 disabled={!hasSelection}
                 testId="generate-center-outline"
@@ -1009,11 +1011,12 @@ export function AdvancedToolbar({
 
             {outlineStatus && (
               <>
-                <Separator vertical />
+                <Separator vertical/>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('status')}</span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-mono ${outlineStatus.isClosed ? 'text-green-500' : 'text-red-500'}`}>
+                    <span
+                      className={`text-[10px] font-mono ${outlineStatus.isClosed ? 'text-green-500' : 'text-red-500'}`}>
                       {outlineStatus.isClosed ? t('closed') : t('open')}
                     </span>
                     {outlineStatus.center && (
@@ -1036,39 +1039,39 @@ export function AdvancedToolbar({
 
         {activeTab === 'snap' && (
           <div className="flex items-center gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('snapEnabled') || 'Snap'}</span>
-              <IconButton 
-                icon={Magnet} 
-                title={t('toggleSnap') || 'Toggle Snap'} 
+            <div className="flex flex-col items-center gap-1">
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider text-center w-full block select-none">
+              {t('snap') || 'Snap'}
+            </span>
+              <IconButton
+                icon={Magnet}
+                title={t('toggleSnap') || 'Toggle Snap'}
                 onClick={() => setSnapEnabled?.(!snapEnabled)}
                 active={snapEnabled}
                 testId="toggle-snap-enabled"
               />
             </div>
-
-            <Separator vertical />
-
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('snapTargets') || 'Targets'}</span>
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('snapTargets') || 'Targets'}</span>
               <ButtonGroup>
-                <IconButton 
-                  icon={Target} 
-                  title={t('snapToCenter') || 'Snap to Center'} 
+                <IconButton
+                  icon={Target}
+                  title={t('snapToCenter') || 'Snap to Center'}
                   onClick={() => setSnapToCenter?.(!snapToCenter)}
                   active={snapToCenter}
                   testId="snap-to-center"
                 />
-                <IconButton 
-                  icon={CircleDot} 
-                  title={t('snapToCircles') || 'Snap to Circles'} 
+                <IconButton
+                  icon={CircleDot}
+                  title={t('snapToCircles') || 'Snap to Circles'}
                   onClick={() => setSnapToCircles?.(!snapToCircles)}
                   active={snapToCircles}
                   testId="snap-to-circles"
                 />
-                <IconButton 
-                  icon={Grid3X3} 
-                  title={t('snapToGrid')} 
+                <IconButton
+                  icon={Grid3X3}
+                  title={t('snapToGrid')}
                   onClick={() => setSnapToGrid?.(!snapToGrid)}
                   active={snapToGrid}
                   testId="snap-to-grid-btn"
@@ -1076,23 +1079,25 @@ export function AdvancedToolbar({
               </ButtonGroup>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('guides') || 'Guides'}</span>
-              <IconButton 
-                icon={Eye} 
-                title={t('showSnapGuides') || 'Show Snap Guides'} 
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('guides') || 'Guides'}</span>
+              <IconButton
+                icon={Eye}
+                title={t('showSnapGuides') || 'Show Snap Guides'}
                 onClick={() => setShowSnapGuides?.(!showSnapGuides)}
                 active={showSnapGuides}
                 testId="show-snap-guides"
               />
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('threshold') || 'Threshold'}</span>
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('threshold') || 'Threshold'}</span>
               <div className="flex items-center gap-1">
                 <input
                   type="range"
@@ -1107,10 +1112,11 @@ export function AdvancedToolbar({
               </div>
             </div>
 
-            <Separator vertical />
+            <Separator vertical/>
 
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('quickSnap') || 'Quick Snap'}</span>
+              <span
+                className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{t('quickSnap') || 'Quick Snap'}</span>
               <ButtonGroup>
                 <button
                   onClick={onSnapToCenter}
@@ -1140,7 +1146,7 @@ export function AdvancedToolbar({
             </div>
           </div>
         )}
-        </div>
+      </div>
     </div>
   );
 }

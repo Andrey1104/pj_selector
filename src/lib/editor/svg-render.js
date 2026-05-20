@@ -1,4 +1,4 @@
-import { PX_PER_MM } from "@/lib/editor-utils";
+import {PX_PER_MM, BASE_LASER_COLORS} from "@/lib/editor-utils";
 
 export function shapeToSvgElement(o, canvasMm = 150) {
   const centerOffset = canvasMm / 2;
@@ -109,31 +109,73 @@ export function buildSvgsByColor(objects, canvasMm) {
   for (const o of visible) {
     const hasFill = o.fill && o.fill !== 'none';
     const hasStroke = o.stroke && o.stroke !== 'none';
-
     if (hasFill) {
-      if (!groups.has(o.fill)) groups.set(o.fill, []);
-      groups.get(o.fill).push({...o, stroke: 'none', strokeWidth: 0});
+      const baseColorObj = getClosestColorObject(o.fill);
+      const groupKey = baseColorObj.hex;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {name: baseColorObj.name, list: []});
+      }
+      groups.get(groupKey).list.push({...o, stroke: 'none', strokeWidth: 0});
     }
 
     if (hasStroke) {
-      if (!groups.has(o.stroke)) groups.set(o.stroke, []);
-      groups.get(o.stroke).push({...o, fill: 'none'});
+      const baseColorObj = getClosestColorObject(o.stroke);
+      const groupKey = baseColorObj.hex;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {name: baseColorObj.name, list: []});
+      }
+      groups.get(groupKey).list.push({...o, fill: 'none'});
     }
-
     if (!hasFill && !hasStroke) {
-      if (!groups.has('__no_color__')) groups.set('__no_color__', []);
-      groups.get('__no_color__').push(o);
+      const blackKey = '#000000';
+      if (!groups.has(blackKey)) {
+        groups.set(blackKey, {name: 'black', list: []});
+      }
+      groups.get(blackKey).list.push(o);
     }
   }
-
   const out = [];
-  for (const [c, list] of groups.entries()) {
-    const body = list.map((o) => shapeToSvgElement(o, canvasMm)).join('\n  ');
+  for (const [hexKey, groupData] of groups.entries()) {
+    const body = groupData.list.map((o) => shapeToSvgElement(o, canvasMm)).join('\n  ');
+
     out.push({
-      color: c,
-      filename: `layer-${c.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 16)}.svg`,
+      color: hexKey,
+      filename: `layer-${groupData.name}.svg`,
       svg: `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvasMm}" height="${canvasMm}">\n  ${body}\n</svg>`,
     });
   }
   return out;
+}
+
+function hexToRgb(hex) {
+  const cleanHex = hex.replace('#', '');
+  const fullHex = cleanHex.length === 3
+    ? cleanHex.split('').map(c => c + c).join('')
+    : cleanHex;
+  const num = parseInt(fullHex, 16);
+  return {r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255};
+}
+
+function getClosestColorObject(inputHex) {
+  if (!inputHex || inputHex === 'none') return BASE_LASER_COLORS[0];
+  try {
+    const target = hexToRgb(inputHex);
+    let closest = BASE_LASER_COLORS[0];
+    let minDistance = Infinity;
+
+    for (const base of BASE_LASER_COLORS) {
+      const distance = Math.sqrt(
+        Math.pow(target.r - base.r, 2) +
+        Math.pow(target.g - base.g, 2) +
+        Math.pow(target.b - base.b, 2)
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = base;
+      }
+    }
+    return closest;
+  } catch (e) {
+    return BASE_LASER_COLORS[0];
+  }
 }

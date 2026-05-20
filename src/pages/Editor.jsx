@@ -16,7 +16,7 @@ import {
 } from '@/lib/editor-utils';
 import CanvasSVG from '@/components/editor/CanvasSVG';
 import {
-  ToolButton, ToolbarButton, Panel, ColorRow, SliderRow, SmallBtn, IconButton
+  ToolButton, ToolbarButton, Panel, ColorRow, SliderRow, SmallBtn, IconButton, Separator
 } from '@/components/editor/EditorUI';
 import {ScaleControl} from '@/components/editor/ScaleControl';
 import {AdvancedToolbar} from '@/components/editor/AdvancedToolbar';
@@ -72,7 +72,7 @@ export default function Editor() {
   const [selectedId, setSelectedId] = useState(null);
   const [fill, setFill] = useState('#F59E0B');
   const [stroke, setStroke] = useState('#000000');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [strokeWidth, setStrokeWidth] = useState(0.05);
   const [opacity, setOpacity] = useState(1);
   const [palette, setPalette] = useState(DEFAULT_COLORS);
   const [bgImageUrl, setBgImageUrl] = useState(null);
@@ -1290,9 +1290,9 @@ export default function Editor() {
       toast.error('Canvas is empty');
       return;
     }
-    const perColor = buildSvgsByColor(drawableObjs, actualCanvasMm);
+    const perColor = buildSvgsByColor(drawableObjs, 150);
     perColor.forEach((p) => downloadText(p.svg, `${slug(name)}__${p.filename}`, 'image/svg+xml'));
-    const combinedSvg = buildSvg(drawableObjs, actualCanvasMm);
+    const combinedSvg = buildSvg(drawableObjs, 150);
     downloadText(combinedSvg, `${slug(name)}__combined.svg`, 'image/svg+xml');
 
     toast.success(`Exported ${perColor.length} color file(s) + combined`);
@@ -1469,62 +1469,9 @@ export default function Editor() {
                  data-testid="image-file-input"/>
         </aside>
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-grid-fine min-h-0 overflow-auto">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="flex items-center gap-2" data-testid="canvas-size-switch">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('canvasSize')}:</span>
-              <select
-                value={canvasSizePreset}
-                onChange={(e) => setCanvasSizePreset(e.target.value)}
-                data-testid="canvas-size-select"
-                className="bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
-              >
-                {CANVAS_SIZE_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {t(preset.labelKey)}
-                  </option>
-                ))}
-              </select>
-              {canvasSizePreset === 'custom' && (
-                <input
-                  type="number"
-                  value={customCanvasSize}
-                  onChange={(e) => setCustomCanvasSize(Math.max(50, Math.min(500, parseInt(e.target.value) || 150)))}
-                  data-testid="custom-canvas-size-input"
-                  className="w-16 bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-amber-500"
-                  min="50"
-                  max="500"
-                />
-              )}
-            </div>
 
-            <div className="flex items-center gap-2" data-testid="glass-size-switch">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t('glassSize')}:</span>
-              <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
-                <button
-                  onClick={() => setGlassSize('small')}
-                  data-testid="glass-size-small"
-                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                    glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  37/26 mm
-                </button>
-                <button
-                  onClick={() => setGlassSize('large')}
-                  data-testid="glass-size-large"
-                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                    glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  66/46 mm
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="relative w-full max-w-[640px]" style={{aspectRatio: '1/1'}}>
-            <div className="absolute -top-6 left-0 label-metric" data-testid="canvas-dimensions">
-              {actualCanvasMm} x {actualCanvasMm} mm
-            </div>
+          <div className="relative w-full max-w-[900px]" style={{aspectRatio: '1/1'}}>
+
             <CanvasSVG
               width={CANVAS_W} height={CANVAS_H}
               canvasMm={actualCanvasMm}
@@ -1551,6 +1498,36 @@ export default function Editor() {
 
         <aside className="w-96 border-l border-zinc-900 flex flex-col overflow-y-auto" data-testid="right-panel">
 
+          <div className="flex flex-wrap items-center gap-3 mt-2 mx-auto mb-2">
+            <div className="flex items-center gap-4" data-testid="glass-size-switch">
+              <div className="label-metric" data-testid="canvas-dimensions">
+                {actualCanvasMm} x {actualCanvasMm} mm
+              </div>
+              <Separator vertical/>
+              <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
+
+                <button
+                  onClick={() => setGlassSize('small')}
+                  data-testid="glass-size-small"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'small' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  37/26 mm
+                </button>
+                <button
+                  onClick={() => setGlassSize('large')}
+                  data-testid="glass-size-large"
+                  className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    glassSize === 'large' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  66/46 mm
+                </button>
+              </div>
+            </div>
+          </div>
+          <Separator horizontal/>
           <Panel title="Palette" data-testid="editor-color-palette">
             <div className="grid grid-cols-7 gap-1.5">
               {palette.map((c) => (

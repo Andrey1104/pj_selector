@@ -1,7 +1,7 @@
 export const TYPES = ['rect', 'ellipse', 'line', 'polygon', 'path', 'svgpath', 'text', 'image', 'rectset'];
 export const CANVAS_MM = 150;
-export const CANVAS_W = 640;
-export const CANVAS_H = 640;
+export const CANVAS_W = 900;
+export const CANVAS_H = 900;
 export const HISTORY_LIMIT = 50;
 export const PX_PER_MM = CANVAS_W / CANVAS_MM;
 
@@ -13,6 +13,16 @@ export const CANVAS_SIZE_PRESETS = [
   { id: 'custom', labelKey: 'canvasSizeCustom', mm: null, description: 'Custom' },
 ];
 export const DEFAULT_COLORS = ['#EF4444', '#ff8614', '#f5d742', '#07ed0b', '#165bca', '#FFFFFF', '#000000'];
+export const BASE_LASER_COLORS = [
+  { name: 'black',   hex: '#000000', r: 0,   g: 0,   b: 0   },
+  { name: 'white',   hex: '#ffffff', r: 255, g: 255, b: 255 },
+  { name: 'red',     hex: '#ff0000', r: 255, g: 0,   b: 0   },
+  { name: 'green',   hex: '#00ff00', r: 0,   g: 255, b: 0   },
+  { name: 'blue',    hex: '#0000ff', r: 0,   g: 0,   b: 255 },
+  { name: 'yellow',  hex: '#ffff00', r: 255, g: 255, b: 0   },
+  { name: 'cyan',    hex: '#00ffff', r: 0,   g: 255, b: 255 },
+  { name: 'magenta', hex: '#ff00ff', r: 255, g: 0,   b: 255 }
+];
 export const TOOLS = [
   { id: 'select', label: 'Select (V)', key: 'v', testId: 'tool-select' },
   { id: 'brush', label: 'Brush (B)', key: 'b', testId: 'tool-brush' },

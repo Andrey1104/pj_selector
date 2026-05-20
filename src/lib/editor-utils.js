@@ -8,6 +8,7 @@ export {
   TOOLS,
   HISTORY_LIMIT,
   CANVAS_SIZE_PRESETS,
+  BASE_LASER_COLORS,
 
   newId,
   downloadBlob,

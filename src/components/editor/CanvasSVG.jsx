@@ -38,58 +38,113 @@ export default function CanvasSVG({
   const [draggingDimensionId, setDraggingDimensionId] = useState(null);
   const [activeSnapGuides, setActiveSnapGuides] = useState([]);
 
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({x: 0, y: 0});
+  const isPanningRef = useRef(false);
+  const startPanRef = useRef({x: 0, y: 0});
+
   const HANDLE_KEYS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
-  const calculateSnapGuides = useCallback((objBBox, centerX, centerY) => {
-    if (!snapEnabled || !showSnapGuides) return [];
+  function getCoords(e) {
+    const svg = svgRef.current;
+    if (!svg) return [0, 0];
+    const r = svg.getBoundingClientRect();
+    const clientX = ((e.clientX - r.left) / r.width) * width;
+    const clientY = ((e.clientY - r.top) / r.height) * height;
+    const sceneX = (clientX - pan.x) / zoom;
+    const sceneY = (clientY - pan.y) / zoom;
+    return [sceneX, sceneY];
+  }
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const handleWheel = (e) => {
+      const isZoomModifier = e.ctrlKey || e.metaKey;
+      if (isZoomModifier) {
+        e.preventDefault();
+        const scaleFactor = 1.1;
+        const nextZoom = e.deltaY < 0 ? zoom * scaleFactor : zoom / scaleFactor;
+        const boundedZoom = Math.max(0.2, Math.min(nextZoom, 15));
+        const r = svg.getBoundingClientRect();
+        const mouseX = ((e.clientX - r.left) / r.width) * width;
+        const mouseY = ((e.clientY - r.top) / r.height) * height;
+        setPan((prevPan) => ({
+          x: mouseX - (mouseX - prevPan.x) * (boundedZoom / zoom),
+          y: mouseY - (mouseY - prevPan.y) * (boundedZoom / zoom),
+        }));
+        setZoom(boundedZoom);
+      }
+    };
+    svg.addEventListener('wheel', handleWheel, {passive: false});
+    return () => svg.removeEventListener('wheel', handleWheel);
+  }, [zoom, width, height]);
+
+  const calculateSnapGuides = useCallback((objBBox, canvasCenterX, canvasCenterY) => {
+    if (!snapEnabled || !showSnapGuides) return {guides: [], snappedX: objBBox.x, snappedY: objBBox.y};
 
     const guides = [];
-    const canvasCenterX = width / 2;
-    const canvasCenterY = height / 2;
+    const canvasX = width / 2;
+    const canvasY = height / 2;
     const localPxPerMm = width / canvasMm;
     const glassSizeConfig = GLASS_SIZES[glassSize] || GLASS_SIZES.small;
     const innerRadius = (glassSizeConfig.inner / 2) * localPxPerMm;
     const outerRadius = (glassSizeConfig.outer / 2) * localPxPerMm;
 
-    const objCenterX = objBBox.x + objBBox.w / 2;
-    const objCenterY = objBBox.y + objBBox.h / 2;
+    let objCenterX = objBBox.x + objBBox.w / 2;
+    let objCenterY = objBBox.y + objBBox.h / 2;
+
+    const threshold = snapThreshold * localPxPerMm;
+
+    let finalCenterX = objCenterX;
+    let finalCenterY = objCenterY;
 
     if (snapToCenter) {
-      const distX = Math.abs(objCenterX - canvasCenterX);
-      const distY = Math.abs(objCenterY - canvasCenterY);
+      const distX = Math.abs(objCenterX - canvasX);
+      const distY = Math.abs(objCenterY - canvasY);
 
-      if (distX < snapThreshold * localPxPerMm) {
-        guides.push({type: 'vertical', x: canvasCenterX, label: 'Center'});
+      if (distX < threshold) {
+        guides.push({type: 'vertical', x: canvasX, label: 'Center'});
+        finalCenterX = canvasX;
+        objCenterX = canvasX;
       }
-      if (distY < snapThreshold * localPxPerMm) {
-        guides.push({type: 'horizontal', y: canvasCenterY, label: 'Center'});
+      if (distY < threshold) {
+        guides.push({type: 'horizontal', y: canvasY, label: 'Center'});
+        finalCenterY = canvasY;
+        objCenterY = canvasY;
       }
     }
 
     if (snapToCircles) {
-      const distFromCenter = Math.sqrt(
-        Math.pow(objCenterX - canvasCenterX, 2) +
-        Math.pow(objCenterY - canvasCenterY, 2)
-      );
+      const deltaX = objCenterX - canvasX;
+      const deltaY = objCenterY - canvasY;
+      const distFromCenter = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      if (Math.abs(distFromCenter - innerRadius) < snapThreshold * localPxPerMm) {
-        guides.push({type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: innerRadius, label: 'Inner'});
+      let targetRadius = null;
+
+      if (Math.abs(distFromCenter - innerRadius) < threshold) {
+        guides.push({type: 'circle', cx: canvasX, cy: canvasY, r: innerRadius, label: 'Inner'});
+        targetRadius = innerRadius;
+      } else if (Math.abs(distFromCenter - outerRadius) < threshold) {
+        guides.push({type: 'circle', cx: canvasX, cy: canvasY, r: outerRadius, label: 'Outer'});
+        targetRadius = outerRadius;
       }
-      if (Math.abs(distFromCenter - outerRadius) < snapThreshold * localPxPerMm) {
-        guides.push({type: 'circle', cx: canvasCenterX, cy: canvasCenterY, r: outerRadius, label: 'Outer'});
+
+      if (targetRadius !== null && distFromCenter > 0) {
+        const angle = Math.atan2(deltaY, deltaX);
+
+        finalCenterX = canvasX + targetRadius * Math.cos(angle);
+        finalCenterY = canvasY + targetRadius * Math.sin(angle);
       }
     }
 
-    return guides;
+    return {
+      guides,
+      snappedX: finalCenterX - objBBox.w / 2,
+      snappedY: finalCenterY - objBBox.h / 2
+    };
   }, [snapEnabled, showSnapGuides, snapToCenter, snapToCircles, snapThreshold, width, height, canvasMm, glassSize]);
 
-  function getCoords(e) {
-    const svg = svgRef.current;
-    const r = svg.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * width;
-    const y = ((e.clientY - r.top) / r.height) * height;
-    return [x, y];
-  }
 
   function commitObject(obj) {
     setObjects((prev) => [...prev, obj]);
@@ -117,8 +172,18 @@ export default function CanvasSVG({
     };
   }
 
+
   function onPointerDown(e) {
     e.target.setPointerCapture?.(e.pointerId);
+
+    const isModifier = e.ctrlKey || e.metaKey;
+
+    if (isModifier && tool === 'select' && !e.target.dataset.handle) {
+      isPanningRef.current = true;
+      startPanRef.current = {x: e.clientX - pan.x, y: e.clientY - pan.y};
+      return;
+    }
+
     const [x, y] = getCoords(e);
 
     if (e.target.dataset.handle && selectedId) {
@@ -281,8 +346,18 @@ export default function CanvasSVG({
   }
 
   function onPointerMove(e) {
+    if (isPanningRef.current) {
+      setPan({
+        x: e.clientX - startPanRef.current.x,
+        y: e.clientY - startPanRef.current.y
+      });
+      return;
+    }
+
     const [x, y] = getCoords(e);
     onPointerCoords?.(x, y);
+
+    const isProportional = e.ctrlKey || e.metaKey;
 
     if (marqueeRef.current) {
       const {startX, startY} = marqueeRef.current;
@@ -296,52 +371,120 @@ export default function CanvasSVG({
 
     if (handleRef.current) {
       const {handle, oldBox, origObj} = handleRef.current;
-      const newBox = computeResizedBox(oldBox, handle, x, y);
+      let newBox = computeResizedBox(oldBox, handle, x, y);
+
+      if (isProportional && oldBox.w > 0 && oldBox.h > 0) {
+        const scaleX = newBox.w / oldBox.w;
+        const scaleY = newBox.h / oldBox.h;
+        const maxScale = Math.max(scaleX, scaleY);
+
+        const propW = oldBox.w * maxScale;
+        const propH = oldBox.h * maxScale;
+
+        let propX = newBox.x;
+        let propY = newBox.y;
+
+        if (handle.includes('w')) propX = oldBox.x + oldBox.w - propW;
+        if (handle.includes('n')) propY = oldBox.y + oldBox.h - propH;
+
+        if (handle === 'e' || handle === 'w') propY = oldBox.y + (oldBox.h - propH) / 2;
+        if (handle === 'n' || handle === 's') propX = oldBox.x + (oldBox.w - propW) / 2;
+
+        newBox = {x: propX, y: propY, w: propW, h: propH};
+      }
+
       updateById(origObj.id, () => applyBBoxTransform(origObj, oldBox, newBox));
       return;
     }
+
     if (dragRef.current) {
       const {startX, startY, origObj} = dragRef.current;
       const dx = x - startX;
       const dy = y - startY;
-      const translated = translate(origObj, dx, dy);
-      updateById(origObj.id, () => translated);
+
+      let translated = translate(origObj, dx, dy);
 
       if (showSnapGuides && snapEnabled) {
         const bbox = getBBox(translated);
-        const guides = calculateSnapGuides(bbox, width / 2, height / 2);
+        const canvasCenterX = width / 2;
+        const canvasCenterY = height / 2;
+
+        const {guides, snappedX, snappedY} = calculateSnapGuides(bbox, canvasCenterX, canvasCenterY);
+
         setActiveSnapGuides(guides);
+
+        if (guides.length > 0) {
+          const snapDiffX = snappedX - bbox.x;
+          const snapDiffY = snappedY - bbox.y;
+
+          translated = translate(translated, snapDiffX, snapDiffY);
+        }
+      } else {
+        setActiveSnapGuides([]);
       }
+
+      updateById(origObj.id, () => translated);
       return;
     }
+
     if (drawingRef.current) {
       const d = drawingRef.current;
-      if (d.type === 'path') {
-        updateLast((last) => ({...last, points: [...last.points, [x, y]]}));
-      } else if (d.type === 'rect') {
-        const nx = Math.min(d.startX, x);
-        const ny = Math.min(d.startY, y);
+
+      let snapX = x;
+      let snapY = y;
+
+      if (showSnapGuides && snapEnabled) {
+        const tempBBox = {x: x - 1, y: y - 1, w: 2, h: 2};
+        const canvasCenterX = width / 2;
+        const canvasCenterY = height / 2;
+        const {guides, snappedX, snappedY} = calculateSnapGuides(tempBBox, canvasCenterX, canvasCenterY);
+
+        setActiveSnapGuides(guides);
+
+        if (guides.length > 0) {
+          snapX = snappedX + 1;
+          snapY = snappedY + 1;
+        }
+      } else {
+        setActiveSnapGuides([]);
+      }
+
+      let effectiveType = d.type;
+      if (isProportional) {
+        if (d.type === 'rect') effectiveType = 'square';
+        if (d.type === 'ellipse') effectiveType = 'circle';
+      }
+
+      if (effectiveType === 'path') {
+        updateLast((last) => ({...last, points: [...last.points, [snapX, snapY]]}));
+      } else if (effectiveType === 'rect') {
+        const nx = Math.min(d.startX, snapX);
+        const ny = Math.min(d.startY, snapY);
         updateLast((last) => ({
           ...last,
           x: nx,
           y: ny,
-          width: Math.abs(x - d.startX) || 1,
-          height: Math.abs(y - d.startY) || 1
+          width: Math.abs(snapX - d.startX) || 1,
+          height: Math.abs(snapY - d.startY) || 1
         }));
-      } else if (d.type === 'ellipse') {
-        updateLast((last) => ({...last, rx: Math.abs(x - d.startX) || 1, ry: Math.abs(y - d.startY) || 1}));
-      } else if (d.type === 'line') {
-        updateLast((last) => ({...last, x2: x, y2: y}));
-      } else if (d.type === 'square') {
-        const size = Math.max(Math.abs(x - d.startX), Math.abs(y - d.startY)) || 1;
-        const nx = x < d.startX ? d.startX - size : d.startX;
-        const ny = y < d.startY ? d.startY - size : d.startY;
+      } else if (effectiveType === 'ellipse') {
+        updateLast((last) => ({
+          ...last,
+          rx: Math.abs(snapX - d.startX) || 1,
+          ry: Math.abs(snapY - d.startY) || 1
+        }));
+      } else if (effectiveType === 'line') {
+        updateLast((last) => ({...last, x2: snapX, y2: snapY}));
+      } else if (effectiveType === 'square') {
+        const size = Math.max(Math.abs(snapX - d.startX), Math.abs(snapY - d.startY)) || 1;
+        const nx = snapX < d.startX ? d.startX - size : d.startX;
+        const ny = snapY < d.startY ? d.startY - size : d.startY;
         updateLast((last) => ({...last, x: nx, y: ny, width: size, height: size}));
-      } else if (d.type === 'circle') {
-        const r = Math.max(Math.abs(x - d.startX), Math.abs(y - d.startY)) || 1;
+      } else if (effectiveType === 'circle') {
+        const r = Math.max(Math.abs(snapX - d.startX), Math.abs(snapY - d.startY)) || 1;
         updateLast((last) => ({...last, rx: r, ry: r}));
-      } else if (d.type === 'triangle') {
-        const size = Math.max(Math.abs(x - d.startX), Math.abs(y - d.startY)) || 1;
+      } else if (effectiveType === 'triangle') {
+        const size = Math.max(Math.abs(snapX - d.startX), Math.abs(snapY - d.startY)) || 1;
         const cx = d.startX;
         const cy = d.startY;
         const h = size * Math.sqrt(3) / 2;
@@ -351,8 +494,8 @@ export default function CanvasSVG({
           [cx + h, cy + size / 2],
         ];
         updateLast((last) => ({...last, points}));
-      } else if (d.type === 'octagon') {
-        const size = Math.max(Math.abs(x - d.startX), Math.abs(y - d.startY)) || 1;
+      } else if (effectiveType === 'octagon') {
+        const size = Math.max(Math.abs(snapX - d.startX), Math.abs(snapY - d.startY)) || 1;
         const cx = d.startX;
         const cy = d.startY;
         const points = [];
@@ -370,6 +513,11 @@ export default function CanvasSVG({
 
   function onPointerUp() {
     setActiveSnapGuides([]);
+
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      return;
+    }
 
     if (marqueeRef.current && marqueeRect && setSelectedLayerIds) {
       const {x, y, w, h} = marqueeRect;
@@ -430,17 +578,9 @@ export default function CanvasSVG({
   const pxPerMm = width / canvasMm;
   const glassSizeConfig = GLASS_SIZES[glassSize] || GLASS_SIZES.small;
 
-  if (selected && selectedBox) {
-    console.log('selectedBox', selectedBox)
-    console.log('selected', selected)
-    console.log('width', width)
-    console.log('canvasMm', canvasMm)
-    console.log('canvas', selectedBox.w / (width / canvasMm))
-  }
-
 
   return (
-    <div className="relative w-full h-full" style={{paddingLeft: '28px', paddingBottom: '28px'}}>
+    <div id="main-canvas" className="relative w-full h-full" style={{paddingLeft: '28px', paddingBottom: '28px'}}>
       <div className="absolute left-0 top-0 w-7 pointer-events-none" style={{bottom: '28px'}}>
         <svg width="100%" height="100%" viewBox={`0 0 28 ${height}`} preserveAspectRatio="none"
              className="overflow-visible">
@@ -495,7 +635,9 @@ export default function CanvasSVG({
         ref={svgRef}
         data-testid="design-canvas"
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-full bg-checker border border-zinc-800 cursor-crosshair touch-none select-none"
+        className={`w-full h-full bg-checker border border-zinc-800 touch-none select-none ${
+          isPanningRef.current ? 'cursor-grabbing' : 'cursor-crosshair'
+        }`}
         style={{display: 'block'}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -504,210 +646,216 @@ export default function CanvasSVG({
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
       >
-        {bgImageUrl && (
-          <image href={bgImageUrl} x="0" y="0" width={width} height={height} preserveAspectRatio="xMidYMid meet"
-                 opacity={bgOpacity}/>
-        )}
+        <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          {bgImageUrl && (
+            <image href={bgImageUrl} x="0" y="0" width={width} height={height} preserveAspectRatio="xMidYMid meet"
+                   opacity={bgOpacity}/>
+          )}
 
-        {(() => {
-          const localPxPerMm = width / canvasMm;
-          const outerRadiusMm = glassSizeConfig.outer / 2;
-          const innerRadiusMm = glassSizeConfig.inner / 2;
-          const outerRadius = outerRadiusMm * localPxPerMm;
-          const innerRadius = innerRadiusMm * localPxPerMm;
-          const centerX = width / 2;
-          const centerY = height / 2;
+          {(() => {
+            const localPxPerMm = width / canvasMm;
+            const outerRadiusMm = glassSizeConfig.outer / 2;
+            const innerRadiusMm = glassSizeConfig.inner / 2;
+            const outerRadius = outerRadiusMm * localPxPerMm;
+            const innerRadius = innerRadiusMm * localPxPerMm;
+            const centerX = width / 2;
+            const centerY = height / 2;
 
-          return (
-            <g data-testid="glass-visualization" pointerEvents="none">
-              <circle
-                cx={centerX}
-                cy={centerY}
-                r={outerRadius}
-                fill="rgba(59, 130, 246, 0.06)"
-                stroke="rgba(59, 130, 246, 0.5)"
-                strokeWidth="2"
-                strokeDasharray="10 5"
-              />
-              <circle
-                cx={centerX}
-                cy={centerY}
-                r={innerRadius}
-                fill="rgba(156, 163, 175, 0.08)"
-                stroke="rgba(156, 163, 175, 0.6)"
-                strokeWidth="2"
-                strokeDasharray="6 3"
-              />
-            </g>
-          );
-        })()}
-
-        {objects.filter((o) => o.visible !== false).map((o) => (
-          <ShapeNode key={o.id} o={o} onSelect={() => tool === 'select' && setSelectedId(o.id)}
-                     wireframeMode={wireframeMode}/>
-        ))}
-        {selected && selectedBox && (
-          <g key="selection-overlay">
-            <rect key="selection-bbox" x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h}
-                  fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1" strokeDasharray="4 4"
-                  pointerEvents="none"/>
-            <g>
-              <rect
-                x={selectedBox.x}
-                y={Math.max(selectedBox.y - 20, 0)}
-                width={selectedBox.w}
-                height="16"
-                fill="rgba(0, 0, 0, 0)"
-                pointerEvents="none"/>
-              <text
-                x={selectedBox.x + selectedBox.w / 2}
-                y={Math.max(selectedBox.y - 15, 15)}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#F59E0B"
-                fontSize="10"
-                fontWeight="bold"
-                pointerEvents="none">
-                <tspan fill="#F59E0B">{(selectedBox.w / (width / canvasMm)).toFixed(1)}</tspan> mm
-              </text>
-            </g>
-            <g>
-              <rect
-                x={selectedBox.x + selectedBox.w + 5}
-                y={selectedBox.y + selectedBox.h / 2 - 16}
-                width="50"
-                height="30"
-                fill="rgba(0, 0, 0, 0)"
-                pointerEvents="none"/>
-              <text
-                x={selectedBox.x + selectedBox.w + 40}
-                y={selectedBox.y + selectedBox.h / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#F59E0B"
-                fontSize="10"
-                fontWeight="bold"
-                pointerEvents="none">
-                <tspan fill="#F59E0B">{(selectedBox.h / (width / canvasMm)).toFixed(1)}</tspan> mm
-              </text>
-            </g>
-
-            {!selected.locked && !selected.sizeLocked && HANDLE_KEYS.map((h) => {
-              const pos = handlePos(h, selectedBox);
-              return (
-                <rect key={h} data-handle={h} data-testid={`handle-${h}`} x={pos.x - 5} y={pos.y - 5} width="10"
-                      height="10" fill="#F59E0B" stroke="#000" strokeWidth="1" style={{cursor: handleCursor(h)}}/>
-              );
-            })}
-
-            {selected.sizeLocked && (
-              <g transform={`translate(${selectedBox.x + selectedBox.w / 2}, ${selectedBox.y - 15})`}>
-                <rect x="-20" y="-8" width="40" height="16" fill="#EF4444" rx="2"/>
-                <text x="0" y="4" textAnchor="middle" fill="white" fontSize="9" fontFamily="monospace">LOCKED</text>
+            return (
+              <g data-testid="glass-visualization" pointerEvents="none">
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={outerRadius}
+                  fill="rgba(59, 130, 246, 0.06)"
+                  stroke="rgba(59, 130, 246, 0.5)"
+                  strokeWidth="2"
+                  strokeDasharray="10 5"
+                />
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={innerRadius}
+                  fill="rgba(156, 163, 175, 0.08)"
+                  stroke="rgba(156, 163, 175, 0.6)"
+                  strokeWidth="2"
+                  strokeDasharray="6 3"
+                />
               </g>
-            )}
-          </g>
-        )}
+            );
+          })()}
 
-        {marqueeRect && (
-          <rect
-            x={marqueeRect.x}
-            y={marqueeRect.y}
-            width={marqueeRect.w}
-            height={marqueeRect.h}
-            fill="rgba(59, 130, 246, 0.1)"
-            stroke="#3B82F6"
-            strokeWidth="1"
-            strokeDasharray="4 4"
-            pointerEvents="none"
-          />
-        )}
+          {objects.filter((o) => o.visible !== false).map((o) => (
+            <ShapeNode key={o.id} o={o} onSelect={() => tool === 'select' && setSelectedId(o.id)}
+                       wireframeMode={wireframeMode}/>
+          ))}
+          {selected && selectedBox && (
+            <g key="selection-overlay">
+              <rect key="selection-bbox" x={selectedBox.x} y={selectedBox.y} width={selectedBox.w}
+                    height={selectedBox.h}
+                    fill="none" stroke={selected.sizeLocked ? "#EF4444" : "#F59E0B"} strokeWidth="1"
+                    strokeDasharray="4 4"
+                    pointerEvents="none"/>
+              <g>
+                <rect
+                  x={selectedBox.x}
+                  y={Math.max(selectedBox.y - 20, 0)}
+                  width={selectedBox.w}
+                  height="16"
+                  fill="rgba(0, 0, 0, 0)"
+                  pointerEvents="none"/>
+                <text
+                  x={selectedBox.x + selectedBox.w / 2}
+                  y={Math.max(selectedBox.y - 15, 15)}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#F59E0B"
+                  fontSize="10"
+                  fontWeight="bold"
+                  pointerEvents="none">
+                  <tspan fill="#F59E0B">{(selectedBox.w / (width / canvasMm)).toFixed(1)}</tspan>
+                  mm
+                </text>
+              </g>
+              <g>
+                <rect
+                  x={selectedBox.x + selectedBox.w + 5}
+                  y={selectedBox.y + selectedBox.h / 2 - 16}
+                  width="50"
+                  height="30"
+                  fill="rgba(0, 0, 0, 0)"
+                  pointerEvents="none"/>
+                <text
+                  x={selectedBox.x + selectedBox.w + 40}
+                  y={selectedBox.y + selectedBox.h / 2}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#F59E0B"
+                  fontSize="10"
+                  fontWeight="bold"
+                  pointerEvents="none">
+                  <tspan fill="#F59E0B">{(selectedBox.h / (width / canvasMm)).toFixed(1)}</tspan>
+                  mm
+                </text>
+              </g>
 
-        {showSnapGuides && activeSnapGuides.length > 0 && (
-          <g data-testid="snap-guides" pointerEvents="none">
-            {activeSnapGuides.map((guide, index) => {
-              if (guide.type === 'vertical') {
+              {!selected.locked && !selected.sizeLocked && HANDLE_KEYS.map((h) => {
+                const pos = handlePos(h, selectedBox);
                 return (
-                  <g key={`guide-v-${index}`}>
-                    <line
-                      x1={guide.x}
-                      y1={0}
-                      x2={guide.x}
-                      y2={height}
-                      stroke="#10B981"
-                      strokeWidth="1"
-                      strokeDasharray="6 4"
-                      opacity="0.8"
-                    />
-                    {guide.label && (
-                      <g transform={`translate(${guide.x + 5}, 20)`}>
-                        <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
-                        <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
-                      </g>
-                    )}
-                  </g>
+                  <rect key={h} data-handle={h} data-testid={`handle-${h}`} x={pos.x - 5} y={pos.y - 5} width="10"
+                        height="10" fill="#F59E0B" stroke="#000" strokeWidth="1" style={{cursor: handleCursor(h)}}/>
                 );
-              }
-              if (guide.type === 'horizontal') {
-                return (
-                  <g key={`guide-h-${index}`}>
-                    <line
-                      x1={0}
-                      y1={guide.y}
-                      x2={width}
-                      y2={guide.y}
-                      stroke="#10B981"
-                      strokeWidth="1"
-                      strokeDasharray="6 4"
-                      opacity="0.8"
-                    />
-                    {guide.label && (
-                      <g transform={`translate(20, ${guide.y - 5})`}>
-                        <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
-                        <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
-                      </g>
-                    )}
-                  </g>
-                );
-              }
-              if (guide.type === 'circle') {
-                return (
-                  <g key={`guide-c-${index}`}>
-                    <circle
-                      cx={guide.cx}
-                      cy={guide.cy}
-                      r={guide.r}
-                      fill="none"
-                      stroke="#10B981"
-                      strokeWidth="2"
-                      strokeDasharray="8 4"
-                      opacity="0.8"
-                    />
-                    {guide.label && (
-                      <g transform={`translate(${guide.cx + guide.r + 5}, ${guide.cy})`}>
-                        <rect x="-2" y="-10" width="40" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
-                        <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
-                      </g>
-                    )}
-                  </g>
-                );
-              }
-              return null;
-            })}
-          </g>
-        )}
+              })}
 
-        {dimensionLines.map((dim) => (
-          <DimensionLine
-            key={dim.id}
-            dimension={dim}
-            onUpdate={(updates) => {
-              setDimensionLines?.(prev => prev.map(d => d.id === dim.id ? {...d, ...updates} : d));
-            }}
-            color={dim.color || dimensionColor}
-            pxPerMm={pxPerMm}
-          />
-        ))}
+              {selected.sizeLocked && (
+                <g transform={`translate(${selectedBox.x + selectedBox.w / 2}, ${selectedBox.y - 15})`}>
+                  <rect x="-20" y="-8" width="40" height="16" fill="#EF4444" rx="2"/>
+                  <text x="0" y="4" textAnchor="middle" fill="white" fontSize="9" fontFamily="monospace">LOCKED</text>
+                </g>
+              )}
+            </g>
+          )}
+
+          {marqueeRect && (
+            <rect
+              x={marqueeRect.x}
+              y={marqueeRect.y}
+              width={marqueeRect.w}
+              height={marqueeRect.h}
+              fill="rgba(59, 130, 246, 0.1)"
+              stroke="#3B82F6"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              pointerEvents="none"
+            />
+          )}
+
+          {showSnapGuides && activeSnapGuides.length > 0 && (
+            <g data-testid="snap-guides" pointerEvents="none">
+              {activeSnapGuides.map((guide, index) => {
+                if (guide.type === 'vertical') {
+                  return (
+                    <g key={`guide-v-${index}`}>
+                      <line
+                        x1={guide.x}
+                        y1={0}
+                        x2={guide.x}
+                        y2={height}
+                        stroke="#10B981"
+                        strokeWidth="1"
+                        strokeDasharray="6 4"
+                        opacity="0.8"
+                      />
+                      {guide.label && (
+                        <g transform={`translate(${guide.x + 5}, 20)`}>
+                          <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
+                          <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                }
+                if (guide.type === 'horizontal') {
+                  return (
+                    <g key={`guide-h-${index}`}>
+                      <line
+                        x1={0}
+                        y1={guide.y}
+                        x2={width}
+                        y2={guide.y}
+                        stroke="#10B981"
+                        strokeWidth="1"
+                        strokeDasharray="6 4"
+                        opacity="0.8"
+                      />
+                      {guide.label && (
+                        <g transform={`translate(20, ${guide.y - 5})`}>
+                          <rect x="-2" y="-10" width="50" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
+                          <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                }
+                if (guide.type === 'circle') {
+                  return (
+                    <g key={`guide-c-${index}`}>
+                      <circle
+                        cx={guide.cx}
+                        cy={guide.cy}
+                        r={guide.r}
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="2"
+                        strokeDasharray="8 4"
+                        opacity="0.8"
+                      />
+                      {guide.label && (
+                        <g transform={`translate(${guide.cx + guide.r + 5}, ${guide.cy})`}>
+                          <rect x="-2" y="-10" width="40" height="14" fill="rgba(16, 185, 129, 0.9)" rx="2"/>
+                          <text x="2" y="0" fill="white" fontSize="9" fontFamily="monospace">{guide.label}</text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                }
+                return null;
+              })}
+            </g>
+          )}
+
+          {dimensionLines.map((dim) => (
+            <DimensionLine
+              key={dim.id}
+              dimension={dim}
+              onUpdate={(updates) => {
+                setDimensionLines?.(prev => prev.map(d => d.id === dim.id ? {...d, ...updates} : d));
+              }}
+              color={dim.color || dimensionColor}
+              pxPerMm={pxPerMm}
+            />
+          ))}
+        </g>
       </svg>
     </div>
   );
