@@ -15,7 +15,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24' # Оновили до Node.js 24, щоб прибрати попередження GitHub
         cache: 'npm'
 
     - name: Install & Build Next.js Static
@@ -23,6 +23,7 @@ jobs:
         npm ci
         npm run build
 
+    # Завантажуємо готову папку збірки
     - name: Upload Build Folder via Password (SCP)
       uses: appleboy/scp-action@master
       with:
@@ -33,6 +34,7 @@ jobs:
         target: "/home/admin/web/chat.alis-is.com/public_html/build_next"
         strip_components: 1
 
+    # Миттєво міняємо папки місцями
     - name: Atomic Swap Build Folder
       uses: appleboy/ssh-action@master
       with:
@@ -42,7 +44,6 @@ jobs:
         script: |
           TARGET_DIR="/home/admin/web/chat.alis-is.com/public_html"
           
-          # На випадок, якщо папка build_next створилася криво, перевіряємо її наявність
           if [ -d "$TARGET_DIR/build_next" ]; then
             echo "🔄 Миттєво підміняємо папку build..."
             mv $TARGET_DIR/build $TARGET_DIR/build_old || true
@@ -50,6 +51,6 @@ jobs:
             rm -rf $TARGET_DIR/build_old
             echo "✅ Сайт успішно оновлено!"
           else
-            echo "❌ Помилка: Папка build_next не знайдена на сервері!"
+            echo "❌ Помилка: Папка build_next не знайдена на сервері після копіювання!"
             exit 1
           fi
