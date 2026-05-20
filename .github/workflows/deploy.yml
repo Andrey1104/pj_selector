@@ -43,14 +43,10 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
           TARGET_DIR="/home/admin/web/chat.alis-is.com/public_html"
-          
           if [ -d "$TARGET_DIR/build_next" ]; then
-            echo "🔄 Миттєво підміняємо папку build..."
             mv $TARGET_DIR/build $TARGET_DIR/build_old || true
             mv $TARGET_DIR/build_next $TARGET_DIR/build
             rm -rf $TARGET_DIR/build_old
-            echo "✅ Сайт успішно оновлено!"
           else
-            echo "❌ Помилка: Папка build_next не знайдена на сервері після копіювання!"
             exit 1
           fi
