@@ -1504,6 +1504,7 @@ export default function Editor() {
                 {actualCanvasMm} x {actualCanvasMm} mm
               </div>
               <Separator vertical/>
+              <Separator vertical/>
               <div className="flex bg-zinc-900 border border-zinc-800 p-0.5">
 
                 <button
