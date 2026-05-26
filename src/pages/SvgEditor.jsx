@@ -111,7 +111,7 @@ export default function SvgEditor() {
         <div>
             <iframe
                 ref={iframeRef}
-                src="/svgedit/dist/editor/index.html"
+                src="/editor/index.html"
                 style={{
                     width: "100vw",
                     height: "100vh",
