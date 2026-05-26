@@ -8,6 +8,7 @@ import Projection from '@/pages/Projection';
 import Library from '@/pages/Library';
 import { Toaster } from '@/components/ui/sonner';
 import { I18nProvider } from '@/lib/i18n';
+import SvgEditor from "@/pages/SvgEditor";
 
 function App() {
   return (
@@ -16,12 +17,13 @@ function App() {
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/selector" replace />} />
+            <Route path="/" element={<Navigate to="/svg" replace />} />
             <Route path="/selector" element={<Selector />} />
             <Route path="/editor" element={<Editor />} />
             <Route path="/editor/:designId" element={<Editor />} />
             <Route path="/projection" element={<Projection />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/svg" element={<SvgEditor />} />
           </Routes>
         </Layout>
         <Toaster theme="dark" />

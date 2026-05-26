@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/editor', label: 'Editor', testId: 'nav-editor', icon: Pencil },
   { to: '/projection', label: 'Projection', testId: 'nav-projection', icon: Box },
   { to: '/library', label: 'Library', testId: 'nav-library', icon: LibIcon },
+  { to: '/svg', label: 'SVG', testId: 'nav-svg', icon: Pencil },
 ];
 
 export default function Layout({ children }) {
