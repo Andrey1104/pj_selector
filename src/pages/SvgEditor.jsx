@@ -50,9 +50,6 @@ export default function SvgEditor() {
         language: "en",
         units: "mm",
         theme: "dark",
-        layerView: "all", // "all" | "current" | "hidden"
-        gridMode: "lines", // "lines" | "dots" | "none"
-        wireframeMode: false, // true | false
     });
 
     const [state, setState] = useState({
@@ -63,14 +60,13 @@ export default function SvgEditor() {
     /* LOAD */
     useEffect(() => {
         const s = loadSettings();
-        if (s) setSettings(prev => ({ ...prev, ...s }));
-        if (s && typeof s.zoom === "number") setState(prev => ({ ...prev, zoom: s.zoom }));
+        if (s) setSettings(s);
     }, []);
 
     /* SAVE */
     useEffect(() => {
-        saveSettings({ ...settings, zoom: state.zoom });
-    }, [settings, state.zoom]);
+        saveSettings(settings);
+    }, [settings]);
 
     /* SYNC SETTINGS → EDITOR */
     useEffect(() => {
@@ -91,13 +87,7 @@ export default function SvgEditor() {
             }
 
             if (e.type === "zoom") {
-                setState((p) => {
-                    if (p.zoom !== e.zoom) {
-                        // Зберігаємо зум у localStorage
-                        saveSettings({ ...settings, zoom: e.zoom });
-                    }
-                    return { ...p, zoom: e.zoom };
-                });
+                setState((p) => ({ ...p, zoom: e.zoom }));
             }
 
             if (e.type === "tool") {
@@ -108,10 +98,9 @@ export default function SvgEditor() {
         if (msg.type === "editor-ready") {
             bridge.setGrid(settings.grid);
             bridge.setSnap(settings.snapToGrid);
-            if (typeof state.zoom === "number") bridge.setZoom(state.zoom);
             bridge.getZoom();
         }
-    }, [settings, state.zoom]);
+    }, [settings]);
 
     useEffect(() => {
         window.addEventListener("message", onMessage);
@@ -120,12 +109,6 @@ export default function SvgEditor() {
 
     return (
         <div>
-            {/*
-              Для тесту: перемикайте режими так:
-              setSettings(s => ({ ...s, layerView: "current" }));
-              setSettings(s => ({ ...s, gridMode: "dots" }));
-              setSettings(s => ({ ...s, wireframeMode: !s.wireframeMode }));
-            */}
             <iframe
                 ref={iframeRef}
                 src="/svgedit/dist/editor/index.html"
