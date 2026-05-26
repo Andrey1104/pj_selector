@@ -20,6 +20,7 @@ export const BASE_LASER_COLORS = [
   { name: 'green',   hex: '#00ff00', r: 0,   g: 255, b: 0   },
   { name: 'blue',    hex: '#0000ff', r: 0,   g: 0,   b: 255 },
   { name: 'yellow',  hex: '#ffff00', r: 255, g: 255, b: 0   },
+  { name: 'orange',  hex: '#ff8614', r: 255, g: 134, b: 20   },
   { name: 'cyan',    hex: '#00ffff', r: 0,   g: 255, b: 255 },
   { name: 'magenta', hex: '#ff00ff', r: 255, g: 0,   b: 255 }
 ];

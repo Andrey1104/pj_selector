@@ -53,7 +53,7 @@ export default function SvgEditor() {
     });
 
     const [state, setState] = useState({
-        zoom: 1,
+        zoom: 3,
         tool: "select",
     });
 
