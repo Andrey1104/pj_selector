@@ -53,40 +53,30 @@ export default function SvgEditor() {
         layerView: "all", // "all" | "current" | "hidden"
         gridMode: "lines", // "lines" | "dots" | "none"
         wireframeMode: false, // true | false
-        zoom: 1,
     });
 
     const [state, setState] = useState({
+        zoom: 1,
         tool: "select",
     });
-
-    const [editorReady, setEditorReady] = useState(false);
 
     /* LOAD */
     useEffect(() => {
         const s = loadSettings();
         if (s) setSettings(prev => ({ ...prev, ...s }));
+        if (s && typeof s.zoom === "number") setState(prev => ({ ...prev, zoom: s.zoom }));
     }, []);
 
     /* SAVE */
     useEffect(() => {
-        saveSettings(settings);
-    }, [settings]);
+        saveSettings({ ...settings, zoom: state.zoom });
+    }, [settings, state.zoom]);
 
     /* SYNC SETTINGS → EDITOR */
     useEffect(() => {
-        if (editorReady) {
-            bridge.setGrid(settings.grid);
-            bridge.setSnap(settings.snapToGrid);
-        }
-    }, [settings.grid, settings.snapToGrid, editorReady]);
-
-    // Відправляємо зум тільки коли редактор готовий і зум змінився
-    useEffect(() => {
-        if (editorReady) {
-            bridge.setZoom(settings.zoom);
-        }
-    }, [settings.zoom, editorReady]);
+        bridge.setGrid(settings.grid);
+        bridge.setSnap(settings.snapToGrid);
+    }, [settings.grid, settings.snapToGrid]);
 
     /* MESSAGES */
     const onMessage = useCallback((ev) => {
@@ -101,7 +91,13 @@ export default function SvgEditor() {
             }
 
             if (e.type === "zoom") {
-                setSettings((prev) => prev.zoom !== e.zoom ? { ...prev, zoom: e.zoom } : prev);
+                setState((p) => {
+                    if (p.zoom !== e.zoom) {
+                        // Зберігаємо зум у localStorage
+                        saveSettings({ ...settings, zoom: e.zoom });
+                    }
+                    return { ...p, zoom: e.zoom };
+                });
             }
 
             if (e.type === "tool") {
@@ -110,15 +106,12 @@ export default function SvgEditor() {
         }
 
         if (msg.type === "editor-ready") {
-            setEditorReady(true);
             bridge.setGrid(settings.grid);
             bridge.setSnap(settings.snapToGrid);
-            // Надсилаємо зум кілька разів для гарантії
-            bridge.setZoom(settings.zoom);
-            setTimeout(() => bridge.setZoom(settings.zoom), 100);
-            setTimeout(() => bridge.setZoom(settings.zoom), 300);
+            if (typeof state.zoom === "number") bridge.setZoom(state.zoom);
+            bridge.getZoom();
         }
-    }, [settings]);
+    }, [settings, state.zoom]);
 
     useEffect(() => {
         window.addEventListener("message", onMessage);
