@@ -1,4 +1,11 @@
-export default {
-  name: 'Dimension Display',
-  title: 'Toggle dimension labels in millimeters'
+const en = {
+  name: "Dimension Display",
+  buttons: [
+    {
+      title: "Toggle Dimension Labels (mm)"
+    }
+  ]
+};
+export {
+  en as default
 };

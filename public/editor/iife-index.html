@@ -17,13 +17,7 @@
   <div id="container" style="width:100%;height:100vh"></div>
 </body>
 <script src="./iife-Editor.js"></script>
-<script type="module">
-  // Import custom extensions
-  import extCrosshair from './extensions/ext-crosshair/ext-crosshair.js';
-  import extDimensions from './extensions/ext-dimensions/ext-dimensions.js';
-  import extColorLayers from './extensions/ext-color-layers/ext-color-layers.js';
-  import extSizeControl from './extensions/ext-size-control/ext-size-control.js';
-
+<script>
   const EditorCtor = (window.Editor && window.Editor.default) || window.Editor
   const svgEditor = new EditorCtor(document.getElementById('container'))
   svgEditor.setConfig({
@@ -31,10 +25,10 @@
     extensions: [],
     noDefaultExtensions: false,
     userExtensions: [
-      extCrosshair,
-      extDimensions,
-      extColorLayers,
-      extSizeControl
+      { pathName: './extensions/ext-crosshair/ext-crosshair.js' },
+      { pathName: './extensions/ext-dimensions/ext-dimensions.js' },
+      { pathName: './extensions/ext-color-layers/ext-color-layers.js' },
+      { pathName: './extensions/ext-size-control/ext-size-control.js' }
     ]
   })
   svgEditor.init()

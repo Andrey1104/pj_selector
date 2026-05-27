@@ -77,27 +77,65 @@ const extSizeControl = {
       
       const scale = targetSizeMm / currentMaxMm;
       
-      // Calculate new dimensions
+      // Calculate new dimensions in pixels
       const newWidth = dim.width * scale;
       const newHeight = dim.height * scale;
       
-      // Create resize operation
-      svgCanvas.undoMgr.beginUndoableChange('transform', [elem]);
-      
-      // Get current transform
-      const transform = elem.getAttribute('transform') || '';
-      
-      // Calculate center point for scaling
-      const cx = dim.x + dim.width / 2;
-      const cy = dim.y + dim.height / 2;
-      
-      // Apply scale transform
-      const newTransform = `${transform} translate(${cx}, ${cy}) scale(${scale}) translate(${-cx}, ${-cy})`.trim();
-      elem.setAttribute('transform', newTransform);
-      
-      const batchCmd = svgCanvas.undoMgr.finishUndoableChange();
-      if (!batchCmd.isEmpty()) {
-        svgCanvas.undoMgr.addCommandToHistory(batchCmd);
+      // Use svgCanvas methods for proper resizing with undo support
+      try {
+        // Select the element if not selected
+        const selectedElems = svgCanvas.getSelectedElements();
+        if (!selectedElems.includes(elem)) {
+          svgCanvas.selectOnly([elem]);
+        }
+        
+        // Get current bounding box
+        const bbox = svgCanvas.getSelectedBBox();
+        if (!bbox) return;
+        
+        // Calculate scale factors
+        const scaleX = newWidth / bbox.width;
+        const scaleY = newHeight / bbox.height;
+        
+        // Use uniform scaling
+        const uniformScale = Math.min(scaleX, scaleY);
+        
+        // Apply resize using svgCanvas method
+        // The resize is relative to the element's current transform
+        svgCanvas.setSvgString(svgCanvas.getSvgString(), false);
+        
+        // Direct attribute modification with undo support
+        svgCanvas.undoMgr.beginUndoableChange('width', [elem]);
+        elem.setAttribute('width', newWidth);
+        let batchCmd = svgCanvas.undoMgr.finishUndoableChange();
+        
+        svgCanvas.undoMgr.beginUndoableChange('height', [elem]);
+        elem.setAttribute('height', newHeight);
+        const batchCmd2 = svgCanvas.undoMgr.finishUndoableChange();
+        
+        if (!batchCmd.isEmpty()) {
+          svgCanvas.undoMgr.addCommandToHistory(batchCmd);
+        }
+        if (!batchCmd2.isEmpty()) {
+          svgCanvas.undoMgr.addCommandToHistory(batchCmd2);
+        }
+        
+        // For elements that don't have width/height attributes (like paths), use transform
+        if (!elem.hasAttribute('width')) {
+          const cx = dim.x + dim.width / 2;
+          const cy = dim.y + dim.height / 2;
+          const transform = elem.getAttribute('transform') || '';
+          const newTransform = `${transform} translate(${cx}, ${cy}) scale(${scale}) translate(${-cx}, ${-cy})`.trim();
+          
+          svgCanvas.undoMgr.beginUndoableChange('transform', [elem]);
+          elem.setAttribute('transform', newTransform);
+          const batchCmd3 = svgCanvas.undoMgr.finishUndoableChange();
+          if (!batchCmd3.isEmpty()) {
+            svgCanvas.undoMgr.addCommandToHistory(batchCmd3);
+          }
+        }
+      } catch (e) {
+        console.error('Resize error:', e);
       }
     };
     

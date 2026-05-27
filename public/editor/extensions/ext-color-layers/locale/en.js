@@ -1,4 +1,11 @@
-export default {
-  name: 'Color Layers',
-  title: 'Separate SVG into layers by color'
+const en = {
+  name: "Color Layers",
+  buttons: [
+    {
+      title: "Color Layers - Separate SVG by colors"
+    }
+  ]
+};
+export {
+  en as default
 };

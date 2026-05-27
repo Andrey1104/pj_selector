@@ -1,4 +1,11 @@
-export default {
-  name: 'Crosshair Guides',
-  title: 'Toggle crosshair guidelines'
+const en = {
+  name: "Crosshair Guides",
+  buttons: [
+    {
+      title: "Toggle Crosshair Guidelines"
+    }
+  ]
+};
+export {
+  en as default
 };
