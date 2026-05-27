@@ -113,8 +113,8 @@ export default function SvgEditor() {
                 ref={iframeRef}
                 src="/editor/index.html"
                 style={{
-                    width: "100vw",
-                    height: "100vh",
+                    width: "100%",
+                    height: "89vh",
                     border: "none",
                 }}
             />

@@ -36,7 +36,12 @@
     allowInitialUserOverride: true,
     extensions: [],
     noDefaultExtensions: false,
-    userExtensions: [/* { pathName: '/packages/react-test/dist/react-test.js' } */]
+    userExtensions: [
+      { pathName: './extensions/ext-crosshair/ext-crosshair.js' },
+      { pathName: './extensions/ext-dimensions/ext-dimensions.js' },
+      { pathName: './extensions/ext-color-layers/ext-color-layers.js' },
+      { pathName: './extensions/ext-size-control/ext-size-control.js' }
+    ]
   })
   svgEditor.init()
   if (typeof XDOMAIN !== 'undefined' && XDOMAIN) {
