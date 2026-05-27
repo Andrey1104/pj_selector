@@ -30,13 +30,24 @@
       within the following file to svgEditor.setConfig -->
 <script type="module">
   import Editor from './Editor.js'
+  // Import custom extensions
+  import extCrosshair from './extensions/ext-crosshair/ext-crosshair.js';
+  import extDimensions from './extensions/ext-dimensions/ext-dimensions.js';
+  import extColorLayers from './extensions/ext-color-layers/ext-color-layers.js';
+  import extSizeControl from './extensions/ext-size-control/ext-size-control.js';
+
   /* for available options see the file `docs/tutorials/ConfigOptions.md */
   const svgEditor = new Editor(document.getElementById('container'))
   svgEditor.setConfig({
     allowInitialUserOverride: true,
     extensions: [],
     noDefaultExtensions: false,
-    userExtensions: [/* { pathName: '/packages/react-test/dist/react-test.js' } */]
+    userExtensions: [
+      extCrosshair,
+      extDimensions,
+      extColorLayers,
+      extSizeControl
+    ]
   })
   svgEditor.init()
   if (typeof XDOMAIN !== 'undefined' && XDOMAIN) {
